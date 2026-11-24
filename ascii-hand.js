@@ -1,0 +1,500 @@
+// ASCII 3D figures — raymarched signed-distance shapes rendered as text.
+// Each page section (data-shape="...") has its own figure: robot head, hands, graduation cap,
+// pencil. Scrolling spins, zooms and morphs between them; the pointer adds a slight tilt.
+(() => {
+  const pre = document.querySelector('.ascii-hand');
+  if (!pre) return;
+
+  const RAMP = ' .,:-~=+*#%@';
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- Hand geometry (local space: y = up the fingers, +z = palm side) ----------
+  const PALM_B = [0.44, 0.48, 0.12]; // half extents
+  const PALM_R = 0.1;
+  const BOUND_R = 1.8;
+
+  const FINGERS = [
+    // index, middle, ring, pinky
+    { x: 0.3, y: 0.44, splay: 0.12, len: [0.42, 0.26, 0.2], r: 0.088 },
+    { x: 0.1, y: 0.5, splay: 0.03, len: [0.47, 0.3, 0.22], r: 0.092 },
+    { x: -0.1, y: 0.47, splay: -0.06, len: [0.44, 0.28, 0.2], r: 0.088 },
+    { x: -0.3, y: 0.4, splay: -0.15, len: [0.34, 0.22, 0.18], r: 0.078 },
+  ];
+  const BENDS = [1.3, 1.5, 0.9]; // per-joint bend (radians) at full curl
+
+  const THUMB_BASE = [0.36, -0.22, 0.06];
+  const THUMB_LEN = [0.34, 0.28, 0.22];
+  const THUMB_R = [0.115, 0.105, 0.095];
+  const THUMB_OPEN = [[0.7, 0.6, 0.35], [0.6, 0.75, 0.3], [0.5, 0.85, 0.25]];
+  const THUMB_CURL = [[0.3, 0.6, 0.75], [-0.5, 0.4, 0.75], [-0.9, 0.0, 0.4]];
+
+  // Each capsule: ax ay az, bax bay baz, 1/|ba|^2, r
+  const SEG_STRIDE = 8;
+  const seg = new Float32Array(20 * SEG_STRIDE);
+  let segCount = 0;
+
+  function addSeg(ax, ay, az, bx, by, bz, r) {
+    const o = segCount * SEG_STRIDE;
+    const dx = bx - ax, dy = by - ay, dz = bz - az;
+    seg[o] = ax; seg[o + 1] = ay; seg[o + 2] = az;
+    seg[o + 3] = dx; seg[o + 4] = dy; seg[o + 5] = dz;
+    seg[o + 6] = 1 / (dx * dx + dy * dy + dz * dz);
+    seg[o + 7] = r;
+    segCount++;
+  }
+
+  // curls: [thumb, index, middle, ring, pinky], 0 = straight, 1 = fully curled
+  function buildHand(curls) {
+    segCount = 0;
+    addSeg(0, -0.35, 0, 0, -1.05, 0, 0.27); // wrist
+
+    FINGERS.forEach((f, i) => {
+      const k = curls[i + 1];
+      const s = f.splay * (1 - 0.5 * k);
+      let x = f.x, y = f.y, z = 0, a = 0;
+      for (let j = 0; j < 3; j++) {
+        a += BENDS[j] * k;
+        const ca = Math.cos(a);
+        const nx = x + Math.sin(s) * ca * f.len[j];
+        const ny = y + Math.cos(s) * ca * f.len[j];
+        const nz = z + Math.sin(a) * f.len[j];
+        addSeg(x, y, z, nx, ny, nz, f.r * (1 - j * 0.07));
+        x = nx; y = ny; z = nz;
+      }
+    });
+
+    const k = curls[0];
+    let [x, y, z] = THUMB_BASE;
+    for (let j = 0; j < 3; j++) {
+      const o = THUMB_OPEN[j], c = THUMB_CURL[j];
+      let dx = o[0] + (c[0] - o[0]) * k;
+      let dy = o[1] + (c[1] - o[1]) * k;
+      let dz = o[2] + (c[2] - o[2]) * k;
+      const inv = THUMB_LEN[j] / Math.hypot(dx, dy, dz);
+      dx *= inv; dy *= inv; dz *= inv;
+      addSeg(x, y, z, x + dx, y + dy, z + dz, THUMB_R[j]);
+      x += dx; y += dy; z += dz;
+    }
+  }
+
+  function handSdf(px, py, pz) {
+    // palm: rounded box
+    const qx = Math.abs(px) - PALM_B[0] + PALM_R;
+    const qy = Math.abs(py) - PALM_B[1] + PALM_R;
+    const qz = Math.abs(pz) - PALM_B[2] + PALM_R;
+    const mx = Math.max(qx, 0), my = Math.max(qy, 0), mz = Math.max(qz, 0);
+    const palm =
+      Math.sqrt(mx * mx + my * my + mz * mz) + Math.min(Math.max(qx, qy, qz), 0) - PALM_R;
+
+    // fingers, thumb, wrist: capsules
+    let d = 1e9;
+    for (let i = 0, o = 0; i < segCount; i++, o += SEG_STRIDE) {
+      const ax = px - seg[o], ay = py - seg[o + 1], az = pz - seg[o + 2];
+      const bx = seg[o + 3], by = seg[o + 4], bz = seg[o + 5];
+      let h = (ax * bx + ay * by + az * bz) * seg[o + 6];
+      h = h < 0 ? 0 : h > 1 ? 1 : h;
+      const cx = ax - bx * h, cy = ay - by * h, cz = az - bz * h;
+      const dist = Math.sqrt(cx * cx + cy * cy + cz * cz) - seg[o + 7];
+      if (dist < d) d = dist;
+    }
+
+    // smooth union so fingers blend into the palm
+    const kk = 0.08;
+    const hh = Math.max(kk - Math.abs(palm - d), 0) / kk;
+    return Math.min(palm, d) - hh * hh * kk * 0.25;
+  }
+
+  // ---------- Shape helpers ----------
+  function ellipsoid(px, py, pz, rx, ry, rz) {
+    const ax = px / rx, ay = py / ry, az = pz / rz;
+    const k0 = Math.sqrt(ax * ax + ay * ay + az * az);
+    const bx = ax / rx, by = ay / ry, bz = az / rz;
+    const k1 = Math.sqrt(bx * bx + by * by + bz * bz) || 1e-6;
+    return (k0 * (k0 - 1)) / k1;
+  }
+
+  function capsule(px, py, pz, ax, ay, az, bx, by, bz, r) {
+    const pax = px - ax, pay = py - ay, paz = pz - az;
+    const bax = bx - ax, bay = by - ay, baz = bz - az;
+    let h = (pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz);
+    h = h < 0 ? 0 : h > 1 ? 1 : h;
+    const cx = pax - bax * h, cy = pay - bay * h, cz = paz - baz * h;
+    return Math.sqrt(cx * cx + cy * cy + cz * cz) - r;
+  }
+
+  function smin(a, b, k) {
+    const h = Math.max(k - Math.abs(a - b), 0) / k;
+    return Math.min(a, b) - h * h * k * 0.25;
+  }
+
+  // carve shape b out of a
+  function ssub(a, b, k) {
+    let h = 0.5 - (0.5 * (a + b)) / k;
+    h = h < 0 ? 0 : h > 1 ? 1 : h;
+    return a + (-b - a) * h + k * h * (1 - h);
+  }
+
+  // ---------- Robot head (looking toward +z) ----------
+  function roundBox(px, py, pz, bx, by, bz, r) {
+    const qx = Math.abs(px) - bx + r, qy = Math.abs(py) - by + r, qz = Math.abs(pz) - bz + r;
+    const mx = Math.max(qx, 0), my = Math.max(qy, 0), mz = Math.max(qz, 0);
+    return Math.sqrt(mx * mx + my * my + mz * mz) + Math.min(Math.max(qx, qy, qz), 0) - r;
+  }
+
+  // capped cylinder: radial distance `rad`, offset along the axis `ax`, half length h
+  function cyl(rad, ax, r, h) {
+    const dx = rad - r, dy = Math.abs(ax) - h;
+    return Math.min(Math.max(dx, dy), 0) + Math.hypot(Math.max(dx, 0), Math.max(dy, 0));
+  }
+
+  function robotSdf(px, py, pz) {
+    const ax = Math.abs(px); // left/right symmetry
+
+    // head with a recessed face panel
+    let d = roundBox(px, py - 0.25, pz, 0.72, 0.62, 0.6, 0.16);
+    d = ssub(d, roundBox(px, py - 0.18, pz - 0.62, 0.56, 0.44, 0.07, 0.08), 0.02);
+    // seam around the top of the head
+    d = ssub(d, roundBox(px, py - 0.62, pz, 0.8, 0.012, 0.7, 0.005), 0.01);
+
+    // eyes: ring lenses with an eyeball inside
+    const ex = ax - 0.26, ey = py - 0.32, er = Math.hypot(ex, ey);
+    let eye = cyl(er, pz - 0.66, 0.2, 0.13) - 0.015; // lens barrel sticking out of the panel
+    eye = ssub(eye, cyl(er, pz - 0.82, 0.14, 0.12), 0.01); // hollow it out
+    d = Math.min(d, eye);
+    d = Math.min(d, Math.sqrt(ex * ex + ey * ey + (pz - 0.66) ** 2) - 0.11); // eyeball
+
+    // mouth grille with vertical slots
+    let mouth = roundBox(px, py + 0.08, pz - 0.62, 0.34, 0.11, 0.09, 0.03);
+    const slot = ((((px + 0.06) % 0.12) + 0.12) % 0.12) - 0.06;
+    if (ax < 0.29) mouth = ssub(mouth, roundBox(slot, py + 0.08, pz - 0.72, 0.026, 0.075, 0.06, 0.01), 0.005);
+    d = Math.min(d, mouth);
+
+    // ear discs + bolts
+    const rx = Math.hypot(py - 0.25, pz);
+    d = smin(d, cyl(rx, ax - 0.74, 0.22, 0.07) - 0.02, 0.04);
+    d = Math.min(d, cyl(rx, ax - 0.82, 0.08, 0.04) - 0.01);
+
+    // antenna
+    d = smin(d, cyl(Math.hypot(px, pz), py - 0.9, 0.1, 0.04), 0.04);
+    d = Math.min(d, capsule(px, py, pz, 0, 0.9, 0, 0, 1.22, 0, 0.03));
+    d = Math.min(d, Math.sqrt(px * px + (py - 1.3) ** 2 + pz * pz) - 0.09);
+
+    // ribbed neck on a collar
+    const rr = Math.hypot(px, pz);
+    let neck = cyl(rr, py + 0.62, 0.27, 0.3);
+    for (const y of [-0.5, -0.64, -0.78]) {
+      neck = ssub(neck, Math.hypot(rr - 0.28, py - y) - 0.035, 0.01);
+    }
+    d = Math.min(d, neck);
+    d = Math.min(d, cyl(rr, py + 0.95, 0.36, 0.04) - 0.03);
+    return d;
+  }
+
+  // ---------- Graduation cap ----------
+  function capSdf(px, py, pz) {
+    // skull cap: capped cylinder
+    const q = Math.hypot(px, pz) - 0.52;
+    const h = Math.abs(py - 0.05) - 0.3;
+    let d = Math.min(Math.max(q, h), 0) + Math.hypot(Math.max(q, 0), Math.max(h, 0)) - 0.04;
+
+    // mortarboard: thin square board turned 45°
+    const rx = Math.abs((px + pz) * Math.SQRT1_2) - 0.78;
+    const rz = Math.abs((pz - px) * Math.SQRT1_2) - 0.78;
+    const ry = Math.abs(py - 0.4) - 0.035;
+    const mx = Math.max(rx, 0), my = Math.max(ry, 0), mz = Math.max(rz, 0);
+    d = smin(d, Math.sqrt(mx * mx + my * my + mz * mz) + Math.min(Math.max(rx, ry, rz), 0) - 0.02, 0.05);
+
+    // button + tassel
+    d = Math.min(d, Math.sqrt(px * px + (py - 0.47) ** 2 + pz * pz) - 0.07);
+    d = Math.min(d, capsule(px, py, pz, 0, 0.47, 0, 0.88, 0.45, 0, 0.025));
+    d = Math.min(d, capsule(px, py, pz, 0.88, 0.45, 0, 0.88, -0.05, 0, 0.03));
+    d = Math.min(d, capsule(px, py, pz, 0.88, -0.1, 0, 0.88, -0.45, 0, 0.08));
+    return d;
+  }
+
+  // ---------- Pencil (digital artist) ----------
+  function cappedCone(px, py, pz, h, r1, r2) {
+    // iq's capped cone, centred at origin, r1 at y = -h, r2 at y = +h
+    const qx = Math.hypot(px, pz), qy = py;
+    const k1x = r2, k1y = h, k2x = r2 - r1, k2y = 2 * h;
+    const cax = qx - Math.min(qx, qy < 0 ? r1 : r2), cay = Math.abs(qy) - h;
+    let t = ((k1x - qx) * k2x + (k1y - qy) * k2y) / (k2x * k2x + k2y * k2y);
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    const cbx = qx - k1x + k2x * t, cby = qy - k1y + k2y * t;
+    const s = cbx < 0 && cay < 0 ? -1 : 1;
+    return s * Math.sqrt(Math.min(cax * cax + cay * cay, cbx * cbx + cby * cby));
+  }
+
+  function hexPrism(px, py, pz, r, halfLen) {
+    // hexagonal prism along y
+    let x = Math.abs(px), z = Math.abs(pz);
+    const kx = -0.8660254, kz = 0.5, kk = 0.57735;
+    const dot = Math.min(kx * x + kz * z, 0) * 2;
+    x -= dot * kx; z -= dot * kz;
+    const cx = Math.max(-kk * r, Math.min(kk * r, x));
+    const dx = Math.hypot(x - cx, z - r) * Math.sign(z - r);
+    const dy = Math.abs(py) - halfLen;
+    return Math.min(Math.max(dx, dy), 0) + Math.hypot(Math.max(dx, 0), Math.max(dy, 0));
+  }
+
+  function pencilSdf(px, py, pz) {
+    let d = hexPrism(px, py - 0.2, pz, 0.22, 0.75) - 0.015; // body
+    d = Math.min(d, cappedCone(px, py + 0.83, pz, 0.28, 0.03, 0.21)); // sharpened wood
+    d = Math.min(d, Math.sqrt(px * px + (py + 1.11) ** 2 + pz * pz) - 0.035); // graphite tip
+    // metal band with two grooves
+    const band = Math.max(Math.hypot(px, pz) - 0.245, Math.abs(py - 1.05) - 0.1);
+    d = Math.min(d, band);
+    d = ssub(d, Math.max(Math.hypot(px, pz) - 0.26, Math.abs(Math.abs(py - 1.05) - 0.05) - 0.012) + 0.0, 0.01);
+    // eraser
+    const er = Math.max(Math.hypot(px, pz) - 0.2, Math.abs(py - 1.27) - 0.12) ;
+    d = Math.min(d, er - 0.03);
+    return d;
+  }
+
+  // ---------- Scene: one shape per page section ----------
+  // Each section in the HTML carries data-shape="<name>".
+  const SHAPES = {
+    robot: { kind: 'robot', yaw: -0.4, pitch: 0.08, roll: 0, dist: 5.4 },
+    open: { kind: 'hand', curls: [0, 0, 0, 0, 0], yaw: 0.35, pitch: 0.1, roll: 0.05, dist: 5.8 },
+    point: { kind: 'hand', curls: [0.85, 0, 1, 1, 1], yaw: 0.15, pitch: 0.1, roll: 0.75, dist: 5.0 }, // points at the text
+    cap: { kind: 'cap', yaw: 0.25, pitch: 0.22, roll: 0.1, dist: 5.4 },
+    pencil: { kind: 'pencil', yaw: 0.3, pitch: 0.2, roll: -0.65, dist: 5.4 },
+    wave: { kind: 'hand', curls: [0, 0, 0, 0, 0], yaw: 0.1, pitch: 0.05, roll: 0, dist: 5.6, wave: true },
+  };
+  const FIELDS = { robot: robotSdf, hand: handSdf, cap: capSdf, pencil: pencilSdf };
+  const TAU = Math.PI * 2;
+
+  const stages = [...document.querySelectorAll('[data-shape]')]
+    .map((el) => ({ el, ...(SHAPES[el.dataset.shape] || SHAPES.open) }));
+  if (!stages.length) stages.push({ el: document.body, ...SHAPES.robot });
+
+  const smooth = (t) => t * t * (3 - 2 * t);
+  const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  // current blend, read by sdf()
+  let fieldA = robotSdf, fieldB = robotSdf, blend = 0;
+
+  function sdf(px, py, pz) {
+    if (blend <= 0.001) return fieldA(px, py, pz);
+    if (blend >= 0.999) return fieldB(px, py, pz);
+    const a = fieldA(px, py, pz);
+    return a + (fieldB(px, py, pz) - a) * blend;
+  }
+
+  // Robot eyes render as solid bright characters
+  function glows(px, py, pz) {
+    const robot = (fieldA === robotSdf && blend < 0.5) || (fieldB === robotSdf && blend >= 0.5);
+    if (!robot) return false;
+    const ex = Math.abs(px) - 0.26, ey = py - 0.32, ez = pz - 0.66;
+    return ex * ex + ey * ey + ez * ez < 0.125 * 0.125;
+  }
+
+  // Float stage index: 0 while the first section is centred, 1 at the second, ...
+  function scrollStage() {
+    const mid = window.scrollY + window.innerHeight / 2;
+    const maxMid = document.documentElement.scrollHeight - window.innerHeight / 2;
+    const n = stages.length;
+    const centers = stages.map((s, i) => {
+      const r = s.el.getBoundingClientRect();
+      const c = r.top + window.scrollY + Math.min(r.height, window.innerHeight) / 2;
+      // make sure the last sections can still be reached at the bottom of the page
+      return Math.min(c, maxMid - (n - 1 - i) * 60);
+    });
+    if (mid <= centers[0]) return 0;
+    for (let i = 0; i < n - 1; i++) {
+      if (mid <= centers[i + 1]) return i + (mid - centers[i]) / Math.max(1, centers[i + 1] - centers[i]);
+    }
+    return n - 1;
+  }
+
+  // Resolve a (smoothed) stage index into camera + shape settings
+  function scene(s, now) {
+    const n = stages.length;
+    const i = Math.max(0, Math.min(n - 1, Math.floor(s)));
+    const j = Math.min(i + 1, n - 1);
+    // hold each shape, then transform in the middle half of the scroll between sections
+    const t = j === i ? 0 : smooth(clamp01((s - i - 0.25) / 0.5));
+    const A = stages[i], B = stages[j];
+
+    let curls = null;
+    if (A.kind === 'hand' && B.kind === 'hand') {
+      curls = A.curls.map((v, k) => lerp(v, B.curls[k], t));
+      fieldA = fieldB = handSdf;
+      blend = 0;
+    } else {
+      fieldA = FIELDS[A.kind];
+      fieldB = FIELDS[B.kind];
+      blend = t;
+      curls = A.kind === 'hand' ? A.curls : B.kind === 'hand' ? B.curls : null;
+    }
+    if (curls) buildHand(curls);
+
+    const wave = lerp(A.wave ? 1 : 0, B.wave ? 1 : 0, t);
+    return {
+      // a full spin between sections, each shape settles at its own angle
+      yaw: lerp(A.yaw + i * TAU, B.yaw + j * TAU, t),
+      pitch: lerp(A.pitch, B.pitch, t),
+      roll: lerp(A.roll, B.roll, t) + (reduceMotion ? 0 : wave * 0.3 * Math.sin(now / 260)),
+      dist: lerp(A.dist, B.dist, t) + 0.8 * Math.sin(t * Math.PI), // pull back mid-transform
+    };
+  }
+
+  const pointer = { x: 0, y: 0 };
+
+  function targets() {
+    const wide = window.innerWidth > 820;
+    return {
+      stage: scrollStage(),
+      px: pointer.x,
+      py: pointer.y,
+      offset: wide ? 0.22 : 0,
+      opacity: wide ? 0.95 : 0.3,
+    };
+  }
+
+  // ---------- Renderer ----------
+  let cols = 0, rows = 0, cw = 6, ch = 10, W = 0, H = 0;
+
+  function measure() {
+    const probe = document.createElement('span');
+    probe.textContent = 'M'.repeat(100);
+    probe.style.visibility = 'hidden';
+    pre.textContent = '';
+    pre.appendChild(probe);
+    const rect = probe.getBoundingClientRect();
+    cw = rect.width / 100 || 6;
+    ch = parseFloat(getComputedStyle(pre).lineHeight) || rect.height || 10;
+    pre.removeChild(probe);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    cols = Math.ceil(W / cw);
+    rows = Math.ceil(H / ch);
+  }
+
+  const FOCAL = 1.5;
+  const LIGHT = (() => {
+    const l = [-0.75, 0.45, 0.55];
+    const n = Math.hypot(...l);
+    return l.map((v) => v / n);
+  })();
+
+  function render(st, now) {
+    const cam = scene(st.stage, now);
+    const yaw = cam.yaw + st.px * 0.3 + (reduceMotion ? 0 : 0.06 * Math.sin(now / 1600));
+    const pitch = cam.pitch + st.py * 0.2;
+
+    // rotation matrix R = Ry * Rx * Rz (row-major); R^T brings rays into object space
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    const cx = Math.cos(pitch), sx = Math.sin(pitch);
+    const cz = Math.cos(cam.roll), sz = Math.sin(cam.roll);
+    const m0 = cy * cz + sy * sx * sz, m1 = -cy * sz + sy * sx * cz, m2 = sy * cx;
+    const m3 = cx * sz, m4 = cx * cz, m5 = -sx;
+    const m6 = -sy * cz + cy * sx * sz, m7 = sy * sz + cy * sx * cz, m8 = cy * cx;
+    const toLocal = (x, y, z) => [
+      m0 * x + m3 * y + m6 * z,
+      m1 * x + m4 * y + m7 * z,
+      m2 * x + m5 * y + m8 * z,
+    ];
+
+    const [ox, oy, oz] = toLocal(0, 0.2, cam.dist);
+    const [lx, ly, lz] = toLocal(LIGHT[0], LIGHT[1], LIGHT[2]);
+    const ocDot = ox * ox + oy * oy + oz * oz - BOUND_R * BOUND_R;
+
+    const centerX = (W * (0.5 + st.offset)) / cw;
+    const centerY = rows / 2;
+    const ramp = RAMP.length - 1;
+    const lines = new Array(rows);
+    const e = 0.002;
+
+    for (let r = 0; r < rows; r++) {
+      let line = '';
+      const v = ((centerY - r - 0.5) * ch) / H;
+      for (let c = 0; c < cols; c++) {
+        const u = ((c + 0.5 - centerX) * cw) / H;
+        const inv = 1 / Math.sqrt(u * u + v * v + FOCAL * FOCAL);
+        const wx = u * inv, wy = v * inv, wz = -FOCAL * inv;
+        const dx = m0 * wx + m3 * wy + m6 * wz;
+        const dy = m1 * wx + m4 * wy + m7 * wz;
+        const dz = m2 * wx + m5 * wy + m8 * wz;
+
+        // bounding sphere test
+        const b = ox * dx + oy * dy + oz * dz;
+        const disc = b * b - ocDot;
+        if (disc < 0) { line += ' '; continue; }
+        const sq = Math.sqrt(disc);
+        let t = Math.max(-b - sq, 0);
+        const tEnd = -b + sq;
+
+        let hit = false, px = 0, py = 0, pz = 0;
+        for (let i = 0; i < 64; i++) {
+          px = ox + dx * t; py = oy + dy * t; pz = oz + dz * t;
+          const d = sdf(px, py, pz);
+          if (d < 0.003) { hit = true; break; }
+          t += d;
+          if (t > tEnd) break;
+        }
+        if (!hit) { line += ' '; continue; }
+
+        // tetrahedral normal
+        const k1 = sdf(px + e, py - e, pz - e);
+        const k2 = sdf(px - e, py - e, pz + e);
+        const k3 = sdf(px - e, py + e, pz - e);
+        const k4 = sdf(px + e, py + e, pz + e);
+        let nx = k1 - k2 - k3 + k4, ny = -k1 - k2 + k3 + k4, nz = -k1 + k2 - k3 + k4;
+        const nl = 1 / (Math.sqrt(nx * nx + ny * ny + nz * nz) || 1);
+        nx *= nl; ny *= nl; nz *= nl;
+
+        if (glows(px, py, pz)) { line += '@'; continue; }
+
+        // ambient occlusion: darken creases and hollows
+        let occ = 0;
+        for (let a = 1; a <= 3; a++) {
+          const h = 0.04 * a;
+          occ += (h - sdf(px + nx * h, py + ny * h, pz + nz * h)) / a;
+        }
+        const ao = clamp01(1 - 4 * occ);
+
+        const diff = Math.max(0, nx * lx + ny * ly + nz * lz);
+        const facing = Math.max(0, -(nx * dx + ny * dy + nz * dz));
+        const rim = (1 - facing) ** 3;
+        // half-vector specular for a bit of sheen
+        const hx = lx - dx, hy = ly - dy, hz = lz - dz;
+        const hl = 1 / (Math.sqrt(hx * hx + hy * hy + hz * hz) || 1);
+        const spec = Math.max(0, (nx * hx + ny * hy + nz * hz) * hl) ** 24;
+        const val = clamp01((0.06 + 0.7 * diff * diff + 0.35 * rim + 0.5 * spec) * (0.35 + 0.65 * ao));
+        line += RAMP[1 + Math.round(val * (ramp - 1))];
+      }
+      lines[r] = line;
+    }
+    pre.textContent = lines.join('\n');
+    pre.style.opacity = st.opacity.toFixed(3);
+  }
+
+  // ---------- Loop ----------
+  let state = targets();
+  let last = 0;
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (now - last < 33) return; // ~30fps cap
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+
+    const target = targets();
+    const k = reduceMotion ? 1 : 1 - Math.exp(-dt * 6);
+    for (const key of Object.keys(target)) state[key] = lerp(state[key], target[key], k);
+    render(state, now);
+  }
+
+  window.addEventListener('pointermove', (ev) => {
+    pointer.x = (ev.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = (ev.clientY / window.innerHeight) * 2 - 1;
+  }, { passive: true });
+
+  window.addEventListener('resize', measure);
+
+  measure();
+  render(state, performance.now());
+  requestAnimationFrame(frame);
+})();

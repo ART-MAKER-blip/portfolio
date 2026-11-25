@@ -61,81 +61,12 @@ p {
   margin: 0 auto;
 }
 
-/* ---------- Header ---------- */
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  border-bottom: 1px solid var(--line);
-}
-
-.nav-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 64px;
-}
-
-.brand {
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  padding: 0.35rem 0.55rem;
-  border: 1px solid var(--line-strong);
-  transition: background 0.2s var(--ease), color 0.2s var(--ease);
-}
-
-.brand:hover {
-  background: var(--text);
-  color: var(--bg);
-}
-
-.site-nav {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-}
-
-.site-nav a {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  transition: color 0.2s var(--ease);
-}
-
-.site-nav a:hover,
-.site-nav a:focus-visible {
-  color: var(--text);
-}
-
-.nav-toggle {
-  display: none;
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  width: 40px;
-  height: 40px;
-  padding: 0.65rem;
-  cursor: pointer;
-}
-
-.nav-toggle span {
-  display: block;
-  height: 1px;
-  background: var(--text);
-  margin: 5px 0;
-}
-
 /* scroll progress hairline */
 .progress {
-  position: absolute;
+  position: fixed;
+  z-index: 50;
   left: 0;
-  bottom: -1px;
+  top: 0;
   height: 1px;
   width: 100%;
   background: var(--text);
@@ -227,7 +158,7 @@ h3 {
 
 /* ---------- Hero ---------- */
 .hero {
-  min-height: calc(100vh - 64px);
+  min-height: 100vh;
   display: flex;
   align-items: center;
   padding: 4rem 0;
@@ -572,6 +503,11 @@ main,
   opacity: 0;
 }
 
+/* text slides in from the sides while scrolling; don't let it widen the page */
+main {
+  overflow-x: clip;
+}
+
 /* split-text masks: leave room for descenders (g, y, p) */
 h1 span[style*="overflow"],
 h2 span[style*="overflow"] {
@@ -622,28 +558,6 @@ h2 span[style*="overflow"] {
   .job-top {
     flex-direction: column;
     gap: 0.4rem;
-  }
-
-  .site-nav {
-    position: absolute;
-    top: 64px;
-    left: 0;
-    right: 0;
-    background: var(--bg);
-    border-bottom: 1px solid var(--line);
-    padding: 1.2rem 1.25rem 1.5rem;
-    display: none;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1.1rem;
-  }
-
-  .site-nav.is-open {
-    display: flex;
-  }
-
-  .nav-toggle {
-    display: inline-block;
   }
 
   .ascii-hand {

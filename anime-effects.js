@@ -11,24 +11,21 @@ try {
   root.classList.remove('anim-pending');
   return;
 }
-const { animate, createTimeline, stagger, splitText, scrambleText, utils } = anime;
+const { animate, createTimeline, stagger, splitText, scrambleText, onScroll, utils } = anime;
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-const SECTION_ITEMS =
-  '.about-card, .about-highlights > div, .job-card, .edu-card, .skill-group, .contact-meta, .contact-box .btn';
 
 if (reduceMotion) {
   root.classList.remove('anim-pending');
 } else {
   intro();
-  sectionReveals();
+  scrollRide();
   root.classList.remove('anim-pending');
 }
 
 if (finePointer && !reduceMotion) {
-  hoverScramble('.site-nav a, .chip-list span, .brand');
+  hoverScramble('.chip-list span');
   magneticButtons('.btn');
 }
 
@@ -57,39 +54,73 @@ function intro() {
     }, 950);
 }
 
-// ---------- Sections: heading words rise, label decodes, content cascades ----------
-function sectionReveals() {
-  const sections = [...document.querySelectorAll('main .section')].map((section) => {
-    const heading = section.querySelector('h2');
-    const words = heading ? splitText(heading, { words: { wrap: 'clip' } }).words : [];
-    const tag = section.querySelector('.section-tag');
-    const items = section.querySelectorAll(SECTION_ITEMS);
-    const chips = section.querySelectorAll('.chip-list span');
+// ---------- Scroll ride: text slides in and out with the scroll position ----------
+// Each element enters from one side (left, right or below), holds while it's in the
+// middle of the screen, then carries on out the other side. Scrolling back reverses it.
+function slideOnScroll(el, from) {
+  const dx = from === 'left' ? -1 : from === 'right' ? 1 : 0;
+  const dy = from === 'up' ? 1 : 0;
+  const away = (k) => ({ x: `${dx * k * 38}vw`, y: `${dy * k * 24}vh` });
+  animate(el, {
+    keyframes: {
+      '0%': { ...away(1), opacity: 0 },
+      '30%': { x: '0vw', y: '0vh', opacity: 1 },
+      '72%': { x: '0vw', y: '0vh', opacity: 1 },
+      '100%': { ...away(-0.6), opacity: 0 },
+    },
+    ease: 'linear',
+    autoplay: onScroll({ target: el, enter: 'bottom top', leave: 'top bottom', sync: 0.8 }),
+  });
+}
 
-    utils.set(words, { y: '105%' });
-    if (tag) utils.set(tag, { opacity: 0 });
-    utils.set(items, { opacity: 0, y: 28 });
-    utils.set(chips, { opacity: 0, scale: 0.92 });
-    return { section, words, tag, items, chips };
+// run `fn` once, the first time `el` scrolls into view
+function onFirstView(el, fn) {
+  const io = new IntersectionObserver(([entry]) => {
+    if (!entry.isIntersecting) return;
+    io.disconnect();
+    fn();
+  }, { rootMargin: '0px 0px -20% 0px' });
+  io.observe(el);
+}
+
+function scrollRide() {
+  const cycle = ['left', 'up', 'right'];
+  const each = (selector, dirs) =>
+    document.querySelectorAll(selector).forEach((el, i) => slideOnScroll(el, dirs[i % dirs.length]));
+
+  // the hero text drifts off to the left as you scroll away from it
+  const hero = document.querySelector('.hero');
+  if (hero) {
+    animate('.hero-copy', {
+      x: ['0vw', '-28vw'],
+      opacity: [1, 0],
+      ease: 'linear',
+      autoplay: onScroll({ target: hero, enter: 'top top', leave: 'top bottom', sync: 0.8 }),
+    });
+  }
+
+  each('.section .section-tag', ['left']);
+  each('.section h2', ['right', 'left']);
+  each('.about-card', ['up']);
+  each('.about-highlights > div', cycle);
+  each('.job-card', ['left', 'right']);
+  each('.edu-card', ['right', 'left']);
+  each('.skill-group', ['left', 'right']);
+  each('.contact-meta', ['up']);
+
+  // section labels decode the first time they arrive
+  document.querySelectorAll('.section .section-tag').forEach((tag) => {
+    onFirstView(tag, () => animate(tag, { innerHTML: scrambleText({ chars: 'uppercase', cursor: '_' }) }));
   });
 
-  const play = ({ words, tag, items, chips }) => {
-    const tl = createTimeline({ defaults: { ease: 'outExpo', duration: 1000 } });
-    if (tag) tl.add(tag, { opacity: 1, innerHTML: scrambleText({ chars: 'uppercase', cursor: '_' }) }, 0);
-    if (words.length) tl.add(words, { y: '0%', duration: 1100, delay: stagger(60) }, 80);
-    if (items.length) tl.add(items, { opacity: 1, y: 0, delay: stagger(90) }, 300);
-    if (chips.length) tl.add(chips, { opacity: 1, scale: 1, duration: 600, delay: stagger(25) }, 500);
-  };
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      observer.unobserve(entry.target);
-      play(sections.find((s) => s.section === entry.target));
-    });
-  }, { rootMargin: '0px 0px -25% 0px' });
-
-  sections.forEach((s) => observer.observe(s.section));
+  // skill tags pop in one after another
+  document.querySelectorAll('.skill-group').forEach((group) => {
+    const chips = group.querySelectorAll('.chip-list span');
+    utils.set(chips, { opacity: 0, scale: 0.85 });
+    onFirstView(group, () => animate(chips, {
+      opacity: 1, scale: 1, duration: 600, ease: 'outBack', delay: stagger(40, { start: 250 }),
+    }));
+  });
 }
 
 // ---------- Hover: text decodes like a terminal ----------

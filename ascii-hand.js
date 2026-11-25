@@ -3,6 +3,7 @@
 // pencil. Scrolling spins, zooms and morphs between them; the pointer adds a slight tilt.
 (() => {
   const pre = document.querySelector('.ascii-hand');
+  const envPre = document.querySelector('.ascii-env'); // optional background city layer
   if (!pre) return;
 
   const RAMP = " .\'`,:;-~=!+*x%#&$@";
@@ -140,7 +141,17 @@
   }
 
   let forearmReady = false;
+  // waving: the whole arm swings side to side about the elbow (below the screen)
+  const ELBOW_Y = -2.5;
+  let waveCos = 1, waveSin = 0;
+
   function handSdf(px, py, pz) {
+    if (waveSin !== 0) {
+      const qy = py - ELBOW_Y;
+      const rx = waveCos * px + waveSin * qy;
+      py = -waveSin * px + waveCos * qy + ELBOW_Y;
+      px = rx;
+    }
     // palm: soft block with thumb (thenar) and pinky-side pads, cupped in the middle
     let palm = roundBox(px, py, pz, 0.41, 0.47, 0.12, 0.11);
     // the pads/knuckles stay within ~0.1 of the base block, so far away a bound is enough
@@ -368,15 +379,182 @@
     return d;
   }
 
+  // ---------- Environment: an ASCII city behind the figure, one mood per section ----------
+  // Coordinates: X/Y in screen-height units, Y = 0 at the horizon. `Xs` is X without the
+  // camera pan, used for far-away things (sun, moon, dome) so they parallax correctly.
+  function hash(a, b, c) {
+    let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 1442695041);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+  const fract = (x) => x - Math.floor(x);
+
+  // one row of buildings; null outside a building
+  function tower(X, Y, seed, w, hMin, hMax) {
+    if (Y < 0) return null;
+    const b = Math.floor(X / w);
+    const fx = X / w - b;
+    const gap = 0.1 + 0.15 * hash(b, seed, 1);
+    if (fx < gap) return null;
+    const h = hMin + (hMax - hMin) * hash(b, seed, 2) ** 1.6;
+    const lx = (fx - gap) / (1 - gap);
+    if (Y > h) {
+      // some towers carry an antenna spire
+      if (hash(b, seed, 3) > 0.8 && Math.abs(lx - 0.5) < 0.07 && Y < h + 0.09) {
+        return { b, spire: true, tip: Y > h + 0.078 };
+      }
+      return null;
+    }
+    return { b, lx, top: h - Y, wpx: (1 - gap) * w };
+  }
+
+  // façade character: roof, walls, windows; `mode` picks the look
+  function facade(t, mode, cellW, cellH, time, lit) {
+    if (t.spire) return t.tip ? (fract(time * 0.8 + t.b * 0.37) < 0.5 ? '*' : '+') : '|';
+    if (t.top < cellH) return '_';
+    if (t.lx * t.wpx < cellW || (1 - t.lx) * t.wpx < cellW) return '|';
+    if (mode === 'outline') return fract((t.lx * t.wpx + t.top) * 16) < 0.1 ? '/' : ' ';
+    const cols = Math.max(2, Math.round(t.wpx / 0.028));
+    const wx = t.lx * cols, wy = t.top / 0.032;
+    if (t.top < 0.02 || fract(wx) < 0.3 || fract(wx) > 0.75 || fract(wy) < 0.35 || fract(wy) > 0.8) return ' ';
+    const id = Math.floor(wx) * 97 + Math.floor(wy);
+    let on = hash(t.b, id, 5) < lit;
+    if (hash(t.b, id, Math.floor(time * 0.5)) < 0.02) on = !on; // the odd light switching
+    if (mode === 'data') return on ? (hash(t.b, id, Math.floor(time * 3)) < 0.5 ? '0' : '1') : ' ';
+    if (mode === 'sunset') return on ? '.' : ' ';
+    return on ? (mode === 'dawn' ? '=' : '#') : '.';
+  }
+
+  const far = (X, Y) => tower(X * 0.55 + 7.3, Y, 23, 0.075, 0.05, 0.3); // slower, lower back row
+
+  function ground(X, Y, cellH, c, r) {
+    if (Y > -cellH * 1.2) return '_';
+    return hash(c, r, 17) < 0.04 ? '.' : ' ';
+  }
+
+  function stars(c, r, time, density) {
+    if (hash(c, r, 3) > density) return ' ';
+    return hash(c, r, Math.floor(time * 1.5)) > 0.25 ? '.' : '*';
+  }
+
+  const ENVS = {
+    // neon night city: lit windows, spires, stars, a crescent moon
+    night(X, Y, Xs, cellW, cellH, time, c, r) {
+      const t = tower(X, Y, 11, 0.13, 0.08, 0.5);
+      if (t) return facade(t, 'night', cellW, cellH, time, 0.42);
+      const f = far(X, Y);
+      if (f) return f.spire ? '.' : f.top < cellH ? '.' : hash(c, r, 9) < 0.12 ? ':' : ' ';
+      if (Y < 0) return ground(X, Y, cellH, c, r);
+      const mx = Xs - 0.3, my = Y - 0.6, d = Math.hypot(mx, my);
+      if (d < 0.065) return Math.hypot(mx + 0.028, my - 0.012) > 0.065 ? '#' : ' ';
+      if (d < 0.075) return '.';
+      return stars(c, r, time, 0.007);
+    },
+
+    // dawn: the sun rising behind the skyline, rays and haze
+    dawn(X, Y, Xs, cellW, cellH, time, c, r) {
+      const t = tower(X, Y, 11, 0.13, 0.08, 0.5);
+      if (t) return facade(t, 'dawn', cellW, cellH, time, 0.06);
+      const sx = Xs - 0.3, sy = Y - 0.3, d = Math.hypot(sx, sy); // just clearing the skyline
+      if (d < 0.11) return d < 0.065 ? "#" : d < 0.09 ? "*" : "+";
+      const f = far(X, Y);
+      if (f) return f.spire ? ':' : f.top < cellH ? '-' : '.';
+      if (Y < 0) return Y > -cellH * 1.2 ? '_' : hash(c, r, Math.floor(time * 2)) < 0.06 ? '-' : ' ';
+      if (d < 0.5 && Y > 0) {
+        const a = Math.atan2(sy, sx);
+        if (fract(a / (Math.PI / 14) + time * 0.02) < 0.1) return d < 0.3 ? '-' : '.';
+      }
+      return Y < 0.2 && hash(c, r, 21) < (0.2 - Y) * 1.4 ? '.' : ' ';
+    },
+
+    // data city: streams of 0s and 1s falling over the towers
+    data(X, Y, Xs, cellW, cellH, time, c, r) {
+      const t = tower(X, Y, 31, 0.12, 0.08, 0.46);
+      if (t) return facade(t, 'data', cellW, cellH, time, 0.4);
+      if (Y < 0) return ground(X, Y, cellH, c, r);
+      const col = Math.floor(Xs / cellW);
+      if (hash(col, 0, 41) < 0.3) {
+        const speed = 0.12 + hash(col, 0, 42) * 0.25;
+        const head = 0.85 - fract(time * speed + hash(col, 0, 43)) * 1.2;
+        if (Y > head && Y < head + 0.22) {
+          if (Y < head + cellH * 1.5) return '@';
+          return hash(col, Math.floor(Y / cellH), Math.floor(time * 6)) < 0.5 ? '0' : '1';
+        }
+      }
+      const f = far(X, Y);
+      if (f) return f.top < cellH ? '.' : ' ';
+      return stars(c, r, time, 0.003);
+    },
+
+    // campus: a columned hall with a dome, trees either side
+    campus(X, Y, Xs, cellW, cellH, time, c, r) {
+      const x = Xs, ax = Math.abs(x);
+      if (Y < 0) return Y > -cellH * 1.2 ? '_' : hash(c, r, 19) < 0.05 ? ',' : ' ';
+      if (ax < 0.45 && Y < 0.24) {
+        if (Y < 0.03) return '=';
+        if (Y > 0.2) return Y > 0.235 ? '_' : '=';
+        return fract((x + 0.45) / 0.075) < 0.28 ? '|' : ' ';
+      }
+      const roof = 0.24 + 0.1 * (1 - ax / 0.45);
+      if (ax < 0.45 && Y >= 0.24 && Y < roof) return roof - Y < cellH * 1.3 ? (x < 0 ? '/' : '\\') : '.';
+      const dy = Y - 0.34, d = Math.hypot(x, dy);
+      if (ax < 0.13 && Y >= 0.3 && Y < 0.34) return '#';
+      if (dy >= 0 && d < 0.13) return d > 0.13 - cellW * 1.3 ? (x < 0 ? '(' : ')') : fract(Math.atan2(dy, x) * 2.2) < 0.12 ? ':' : ' ';
+      if (ax < 0.012 && Y >= 0.47 && Y < 0.53) return Y > 0.515 ? '^' : '|';
+      for (const tx of [-0.8, -0.6, 0.6, 0.8]) {
+        const ex = x - tx, ey = Y - 0.13;
+        if (ex * ex + ey * ey * 0.8 < 0.0064) return '%&@#'[Math.floor(hash(c, r, 13) * 4)];
+        if (Math.abs(ex) < 0.01 && Y < 0.06) return '|';
+      }
+      const f = far(X, Y);
+      if (f) return f.top < cellH ? '.' : ' ';
+      return stars(c, r, time, 0.004);
+    },
+
+    // blueprint: graph paper with the city drawn as an outline sketch
+    blueprint(X, Y, Xs, cellW, cellH, time, c, r) {
+      const t = tower(X, Y, 11, 0.13, 0.08, 0.5);
+      if (t) return facade(t, 'outline', cellW, cellH, time, 0);
+      const f = far(X, Y);
+      if (f && (f.spire || f.top < cellH || f.lx * f.wpx < cellW || (1 - f.lx) * f.wpx < cellW)) return '.';
+      if (Y < 0 && Y > -cellH * 1.2) return '_';
+      const gx = fract(X / 0.12) < cellW / 0.12, gy = fract(Y / 0.12) < cellH / 0.12;
+      if (gx && gy) return '+';
+      return gy && fract(X / 0.03) < cellW / 0.03 ? '.' : ' ';
+    },
+
+    // sunset harbour: striped sun, silhouettes, reflections on the water
+    sunset(X, Y, Xs, cellW, cellH, time, c, r) {
+      const t = tower(X, Y, 47, 0.14, 0.06, 0.38);
+      if (t) return facade(t, 'sunset', cellW, cellH, time, 0.08);
+      const sy = Y - 0.18, d = Math.hypot(Xs, sy);
+      if (Y >= 0 && d < 0.34) {
+        if (Y < 0.17 && fract(Y / 0.035) < 0.4) return ' '; // retro sun stripes
+        return d < 0.22 ? '#' : d < 0.29 ? '%' : '*';
+      }
+      if (Y < 0) {
+        if (Y > -cellH * 1.2) return '_';
+        const rw = 0.3 * (1 + Y * 1.5);
+        const wave = hash(c, r, Math.floor(time * 3));
+        if (Math.abs(Xs) < rw) return wave < 0.55 ? '=' : '-';
+        return wave < 0.1 ? '~' : ' ';
+      }
+      const f = far(X, Y);
+      if (f) return f.top < cellH ? '.' : ' ';
+      if (Y > 0.42 && Y < 0.62 && hash(Math.floor((X + time * 0.01) / 0.18), Math.floor(Y / 0.02), 9) < 0.09) return '-';
+      return d < 0.42 && hash(c, r, 23) < 0.25 ? '.' : ' ';
+    },
+  };
+
   // ---------- Scene: one shape per page section ----------
   // Each section in the HTML carries data-shape="<name>".
   const SHAPES = {
-    robot: { kind: 'robot', yaw: -0.4, pitch: 0.08, roll: 0, dist: 5.4 },
-    open: { kind: 'hand', curls: [0, 0, 0, 0, 0], yaw: 0.35, pitch: 0.1, roll: 0.05, dist: 5.8 },
-    point: { kind: 'hand', curls: [0.85, 0, 1, 1, 1], yaw: 0.15, pitch: 0.1, roll: 0.75, dist: 5.0 }, // points at the text
-    cap: { kind: 'cap', yaw: 0.25, pitch: 0.22, roll: 0.1, dist: 5.4 },
-    pencil: { kind: 'pencil', yaw: 0.3, pitch: 0.2, roll: -0.65, dist: 5.4 },
-    wave: { kind: 'hand', curls: [0, 0, 0, 0, 0], yaw: 0.1, pitch: 0.05, roll: 0, dist: 5.6, wave: true },
+    robot: { env: 'night', kind: 'robot', yaw: -0.4, pitch: 0.08, roll: 0, dist: 5.4 },
+    open: { env: 'dawn', kind: 'hand', curls: [0, 0, 0, 0, 0], yaw: 0.35, pitch: 0.1, roll: 0.05, dist: 5.8 },
+    point: { env: 'data', kind: 'hand', curls: [0.85, 0, 1, 1, 1], yaw: 0.15, pitch: 0.1, roll: 0.75, dist: 5.0 }, // points at the text
+    cap: { env: 'campus', kind: 'cap', yaw: 0.25, pitch: 0.22, roll: 0.1, dist: 5.4 },
+    pencil: { env: 'blueprint', kind: 'pencil', yaw: 0.3, pitch: 0.2, roll: -0.65, dist: 5.4 },
+    wave: { env: 'sunset', kind: 'hand', curls: [0.05, 0, 0.05, 0.1, 0.16], yaw: 0.1, pitch: 0.05, roll: 0, dist: 5.6, wave: true },
   };
   const FIELDS = { robot: robotSdf, hand: handSdf, cap: capSdf, pencil: pencilSdf };
   const BOUNDS = { robot: [0.15, 1.75], hand: [-0.6, 2.3], cap: [0, 1.8], pencil: [0.1, 1.8] };
@@ -456,7 +634,11 @@
     }
     if (curls) buildHand(curls);
 
+    // hello wave: ~1.4 swings a second about the elbow; eases in as the section arrives
     const wave = lerp(A.wave ? 1 : 0, B.wave ? 1 : 0, t);
+    const swingAngle = reduceMotion ? 0 : wave * 0.2 * Math.sin((now / 1000) * Math.PI * 2 * 1.4);
+    waveCos = Math.cos(swingAngle);
+    waveSin = swingAngle === 0 ? 0 : Math.sin(swingAngle);
 
     // Roller-coaster ride between sections: 0 → 1 → 0 across each transition
     const ride = reduceMotion ? 0 : 1;
@@ -468,13 +650,13 @@
       // a full 360° spin between sections; each shape settles at its own angle
       yaw: lerp(A.yaw + i * TAU, B.yaw + j * TAU, t),
       pitch: lerp(A.pitch, B.pitch, t) + ride * (loop ? TAU * t : 0.55 * arc),
-      roll: lerp(A.roll, B.roll, t) + ride * dir * 0.7 * arc
-        + (reduceMotion ? 0 : wave * 0.3 * Math.sin(now / 260)),
+      roll: lerp(A.roll, B.roll, t) + ride * dir * 0.7 * arc,
       // swoop in close at the middle of the morph, then settle back
       dist: lerp(A.dist, B.dist, t) - ride * 2.0 * arc,
       // swing out toward the right edge and back (away from the text column)
       swing: ride * 0.1 * arc,
       bound: mixBounds(BOUNDS[A.kind], BOUNDS[B.kind], blend === 0 && A.kind === B.kind ? 0 : blend),
+      envA: A.env, envB: B.env, envT: t,
       spec: lerp(MATERIALS[A.kind][0], MATERIALS[B.kind][0], t),
       gloss: lerp(MATERIALS[A.kind][1], MATERIALS[B.kind][1], t),
     };
@@ -574,10 +756,29 @@
     const centerY = rows / 2;
     const ramp = RAMP.length - 1;
     const lines = new Array(rows);
+    const envLines = new Array(rows);
+
+    // environment follows the ride: banks with roll, zooms with distance, bobs with
+    // pitch, and the city pans sideways as the figure spins
+    const zoom = Math.min(1.7, Math.max(0.75, 5.6 / cam.dist));
+    const bank = cam.roll * 0.6, cr = Math.cos(bank), sr = Math.sin(bank);
+    const pan = yaw * 0.07;
+    const lift = Math.sin(pitch) * 0.12;
+    const cellW = cw / H / zoom, cellH = ch / H / zoom;
+    const time = reduceMotion ? 0 : now / 1000;
+    const envA = ENVS[cam.envA] || ENVS.night, envB = ENVS[cam.envB] || envA, envT = cam.envT;
+    const envAt = (c, r, u, v) => {
+      if (!envPre) return ' ';
+      const Xs = (u * cr - v * sr) / zoom;
+      const Y = (u * sr + v * cr) / zoom + 0.25 + lift;
+      // dissolve between environments cell by cell during a transition
+      const f = envA === envB || envT <= 0.001 ? envA : envT >= 0.999 ? envB : hash(c, r, 7) < envT ? envB : envA;
+      return f(Xs + pan, Y, Xs, cellW, cellH, time, c, r);
+    };
     const e = 0.003;
 
     for (let r = 0; r < rows; r++) {
-      let line = '';
+      let line = '', bg = '';
       const v = ((centerY - r - 0.5) * ch) / H;
       for (let c = 0; c < cols; c++) {
         const u = ((c + 0.5 - centerX) * cw) / H;
@@ -590,7 +791,7 @@
         // bounding sphere test
         const b = ox * dx + ocy * dy + oz * dz;
         const disc = b * b - ocDot;
-        if (disc < 0) { line += ' '; continue; }
+        if (disc < 0) { line += ' '; bg += envAt(c, r, u, v); continue; }
         const sq = Math.sqrt(disc);
         let t = Math.max(-b - sq, 0);
         const tEnd = -b + sq;
@@ -603,7 +804,8 @@
           t += d0;
           if (t > tEnd) break;
         }
-        if (!hit) { line += ' '; continue; }
+        if (!hit) { line += ' '; bg += envAt(c, r, u, v); continue; }
+        bg += ' '; // the figure hides the city behind it
 
         // forward-difference normal (reuses the hit distance: 3 extra lookups)
         let nx = sdf(px + e, py, pz) - d0, ny = sdf(px, py + e, pz) - d0, nz = sdf(px, py, pz + e) - d0;
@@ -631,8 +833,10 @@
         line += RAMP[1 + Math.round(val * (ramp - 1))];
       }
       lines[r] = line;
+      envLines[r] = bg;
     }
     pre.textContent = lines.join('\n');
+    if (envPre) envPre.textContent = envLines.join('\n');
     pre.style.opacity = st.opacity.toFixed(3);
   }
 
@@ -643,6 +847,7 @@
 
   function applyLevel() {
     pre.style.fontSize = pre.style.lineHeight = `${LEVELS[level]}px`;
+    if (envPre) envPre.style.fontSize = envPre.style.lineHeight = `${LEVELS[level]}px`;
     measure();
   }
 

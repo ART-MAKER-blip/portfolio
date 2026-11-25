@@ -483,7 +483,22 @@ h3 {
   pointer-events: none;
 }
 
+/* background city: dim, and fading out behind the text column */
+.ascii-env {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  font: 10px/10px var(--mono);
+  white-space: pre;
+  color: #8f8f8f;
+  opacity: 0.42;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.45) 45%, #000 65%);
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.45) 45%, #000 65%);
+}
+
 .ascii-hand {
+  position: relative;
   margin: 0;
   font: 10px/10px var(--mono);
   white-space: pre;
@@ -563,6 +578,10 @@ h2 span[style*="overflow"] {
   .ascii-hand {
     font-size: 8px;
     line-height: 8px;
+  }
+
+  .ascii-env {
+    opacity: 0.2;
   }
 
   .footer-wrap {

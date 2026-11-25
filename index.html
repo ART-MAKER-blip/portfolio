@@ -15,6 +15,13 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <script>
+      // Hide content until Anime.js sets up the entrance animations; never longer than 2.5s.
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('anim-pending');
+        setTimeout(() => document.documentElement.classList.remove('anim-pending'), 2500);
+      }
+    </script>
   </head>
   <body>
     <div class="ascii-stage" aria-hidden="true"><pre class="ascii-hand"></pre></div>
@@ -267,5 +274,6 @@
 
     <script src="script.js"></script>
     <script src="ascii-hand.js"></script>
+    <script src="anime-effects.js"></script>
   </body>
 </html>

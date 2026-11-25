@@ -567,27 +567,21 @@ main,
   z-index: 1;
 }
 
-/* ---------- Reveal on scroll ---------- */
-.reveal {
+/* ---------- Anime.js entrance (anime-effects.js) ---------- */
+.anim-pending main {
   opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
 }
 
-.reveal.is-visible {
-  opacity: 1;
-  transform: none;
+/* split-text masks: leave room for descenders (g, y, p) */
+h1 span[style*="overflow"],
+h2 span[style*="overflow"] {
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
-  }
-
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
   }
 }
 

@@ -32,24 +32,4 @@ if (progress) {
   update();
 }
 
-// Fade content in as it scrolls into view
-const revealTargets = document.querySelectorAll(
-  '.section-head, .about-card, .about-highlights, .job-card, .edu-card, .skill-group, .contact-box'
-);
-if ('IntersectionObserver' in window) {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.15 }
-  );
-  revealTargets.forEach((el) => {
-    el.classList.add('reveal');
-    observer.observe(el);
-  });
-}
+// Entrance and hover animations live in anime-effects.js (Anime.js)

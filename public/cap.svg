@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
-  <!-- Graduation cap (mortarboard) silhouette, sampled into particles for the Education stage. -->
-  <path fill="#fff" d="M200,28 L392,98 L200,168 L8,98 Z"/>
-  <path fill="#fff" d="M92,128 L308,128 L304,214 Q200,262 96,214 Z"/>
-  <path fill="#fff" d="M196,96 L338,124 L338,206 L330,206 L330,131 L196,104 Z"/>
-  <path fill="#fff" d="M322,200 L346,200 L352,262 L316,262 Z"/>
-</svg>

@@ -41,8 +41,12 @@ export const config = {
   mouseRadius: 0.6,
   mouseStrength: reducedMotion ? 0 : 0.22,
 
-  /** Hero parallax rotation (radians at the screen edge). */
+  /** Hero parallax rotation (radians at the screen edge). Unused since hover-turn replaced it. */
   parallax: reducedMotion ? 0 : 0.22,
+
+  /** Hover turn: how far each 3D model turns toward the cursor (radians at the screen edge). */
+  hoverYaw: reducedMotion ? 0 : 0.75,
+  hoverPitch: reducedMotion ? 0 : 0.4,
 
   /** Globe spin speed (radians / second). */
   globeSpin: reducedMotion ? 0 : 0.12,

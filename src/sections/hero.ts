@@ -1,6 +1,6 @@
 import { gsap } from 'gsap';
 
-/** Fade the hero labels in once the preloader has assembled the silhouette. */
+/** Fade the hero labels in once the preloader has assembled the robot. */
 export function revealHero(reduced: boolean, delay = 0) {
   const items = document.querySelectorAll<HTMLElement>('.hero-name, .hero-title, .hero-hint');
   return gsap.fromTo(

@@ -12,6 +12,10 @@ export interface ShapeDef {
   drift?: number;
   /** Alpha multiplier while this shape is shown. */
   alpha?: number;
+  /** Position of the shape (world units), applied after the hover turn so it turns in place. */
+  offset?: [number, number, number];
+  /** How much the shape turns to follow the cursor (0 = fixed, e.g. the contact frame). Default 1. */
+  tilt?: number;
 }
 
 const CAMERA_Z = 10;
@@ -81,6 +85,11 @@ export class ParticleSystem {
       uDriftTo: { value: 0 },
       uAlphaFrom: { value: 1 },
       uAlphaTo: { value: 1 },
+      uOffsetFrom: { value: new THREE.Vector3() },
+      uOffsetTo: { value: new THREE.Vector3() },
+      uTiltFrom: { value: 1 },
+      uTiltTo: { value: 1 },
+      uTilt: { value: new THREE.Vector2() },
       uColor: { value: new THREE.Color(config.color) },
     };
 
@@ -216,6 +225,10 @@ export class ParticleSystem {
       u.uDriftTo.value = to.drift ?? 0;
       u.uAlphaFrom.value = from.alpha ?? 1;
       u.uAlphaTo.value = to.alpha ?? 1;
+      u.uOffsetFrom.value.fromArray(from.offset ?? [0, 0, 0]);
+      u.uOffsetTo.value.fromArray(to.offset ?? [0, 0, 0]);
+      u.uTiltFrom.value = from.tilt ?? 1;
+      u.uTiltTo.value = to.tilt ?? 1;
     }
     u.uIntro.value = this.state.intro;
 
@@ -226,11 +239,11 @@ export class ParticleSystem {
     else if (m.x > 900) m.set(this.mouseTarget.x, this.mouseTarget.y, 0);
     else m.lerp(new THREE.Vector3(this.mouseTarget.x, this.mouseTarget.y, 0), 1 - Math.exp(-dt * 10));
 
-    const pw = config.parallax * this.state.parallaxWeight;
-    const rot = this.points.rotation;
+    // Hover: every 3D model turns toward the cursor (smoothed). Shapes opt out with tilt: 0.
+    const tilt = u.uTilt.value;
     const k = 1 - Math.exp(-dt * 3);
-    rot.y += (this.mouseNdc.x * pw - rot.y) * k;
-    rot.x += (-this.mouseNdc.y * pw * 0.5 - rot.x) * k;
+    tilt.x += (this.mouseNdc.x * config.hoverYaw - tilt.x) * k;
+    tilt.y += (-this.mouseNdc.y * config.hoverPitch - tilt.y) * k;
 
     for (const fn of this.frameListeners) fn(time, dt);
     this.renderer.render(this.scene, this.camera);

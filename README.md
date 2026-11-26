@@ -21,25 +21,26 @@ Deploys to Vercel with `npx vercel deploy --prod` (settings in `vercel.json`).
 
 | Stage | Particle shape | Content |
 |---|---|---|
-| 1. Hero | Head-and-shoulders silhouette | Name and title |
+| 1. Hero | 3D robot bust (glowing eyes, antenna, chest core) | Name and title |
 | 2. Globe | Spinning sphere | "Reviewing AI training data" · "Working remotely" |
-| 3. Location | Outline of the Philippines | Based in the Philippines |
+| 3. Location | Outline of the Philippines, extruded | Based in the Philippines |
 | 4. About | Drifting ribbons | Professional summary |
-| 5. Experience | Annotation bounding boxes | Data Annotation Reviewer; Technical Assistant / OJT |
-| 6. Education | Graduation cap | BSIT (Digital Arts); NC III in Digital Arts (TESDA) |
-| 7. Skills | Network with four hubs | The four skill groups |
+| 5. Experience | 3D annotation cuboids | Data Annotation Reviewer; Technical Assistant / OJT |
+| 6. Education | 3D graduation cap | BSIT (Digital Arts); NC III in Digital Arts (TESDA) |
+| 7. Skills | 3D network with four hubs | The four skill groups |
 | 8. Areas of work | Faint wisp + card strip | Five focus areas |
 | 9. Contact | Frame around the email | artmalong123@gmail.com |
 
 - The scroll choreography is in `src/scroll/timeline.ts`. Shape order there (`SHAPE`) must match the `shapes` array in `src/main.ts`.
-- Procedural shapes (`boxes`, `network`, sphere, ribbons, wisp, frame) are in `src/particles/shapes.ts`. The silhouette, map and cap are sampled from images in `public/`.
+- **3D models** are in `src/particles/models.ts`: the robot and cap are signed distance functions, and `sampleSdf` scatters particles over their surfaces. The cuboids and network are procedural 3D point sets.
+- **Hover:** every model turns toward the cursor (`hoverYaw` / `hoverPitch` in `config.ts`). Set a shape's `tilt: 0` in `src/main.ts` to keep it fixed, as the card wisp and contact frame are. Each shape's `offset` places it beside its text and is applied after the turn, so it turns in place.
+- Other shapes (sphere, ribbons, wisp, frame, image sampler for the map) are in `src/particles/shapes.ts`.
 - Visual tuning (point count, size, noise, mouse repulsion) is in `src/particles/config.ts`.
 
 ## Still to swap
 
 | What | Where |
 |---|---|
-| Portrait silhouette (generic placeholder) | `public/silhouette.png`: any transparent PNG/SVG. A cut-out photo of yourself works well. |
 | Card images (abstract covers) | `public/works/work-1.svg` … `work-5.svg`: any 4:3 image, e.g. your artwork |
 | Card titles / tags | `src/sections/data.ts` |
 

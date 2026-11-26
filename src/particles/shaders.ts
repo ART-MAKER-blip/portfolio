@@ -83,6 +83,11 @@ uniform float uDriftFrom;    // per-shape wave drift (ribbons / wisp)
 uniform float uDriftTo;
 uniform float uAlphaFrom;    // per-shape alpha multiplier
 uniform float uAlphaTo;
+uniform vec3  uOffsetFrom;   // per-shape position (applied after the hover turn)
+uniform vec3  uOffsetTo;
+uniform float uTiltFrom;     // per-shape weight of the hover turn (0 = fixed to the page)
+uniform float uTiltTo;
+uniform vec2  uTilt;         // hover turn: x = yaw, y = pitch (radians)
 
 attribute vec3 aFrom;
 attribute vec3 aTo;
@@ -107,14 +112,24 @@ vec3 drift(vec3 p, float amt) {
   return p;
 }
 
+// Turn a shape around its own centre to follow the cursor.
+vec3 hoverTurn(vec3 p, float weight) {
+  if (weight <= 0.0) return p;
+  float yaw = uTilt.x * weight, pitch = uTilt.y * weight;
+  float c = cos(yaw), s = sin(yaw);
+  p = vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z);
+  c = cos(pitch); s = sin(pitch);
+  return vec3(p.x, c * p.y - s * p.z, s * p.y + c * p.z);
+}
+
 float ease(float x) {
   x = smoothstep(0.0, 1.0, x);
   return uEasePower == 1.0 ? x : (x < 0.5 ? 0.5 * pow(2.0 * x, uEasePower) : 1.0 - 0.5 * pow(2.0 * (1.0 - x), uEasePower));
 }
 
 void main() {
-  vec3 a = drift(rotY(aFrom, uRotFrom), uDriftFrom);
-  vec3 b = drift(rotY(aTo, uRotTo), uDriftTo);
+  vec3 a = hoverTurn(drift(rotY(aFrom, uRotFrom), uDriftFrom), uTiltFrom) + uOffsetFrom;
+  vec3 b = hoverTurn(drift(rotY(aTo, uRotTo), uDriftTo), uTiltTo) + uOffsetTo;
 
   // Per-point stagger: mostly random seed, partly a low-frequency spatial field,
   // so the dissolve travels in soft patches instead of uniform salt-and-pepper.

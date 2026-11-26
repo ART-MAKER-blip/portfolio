@@ -5,7 +5,7 @@ import type { ParticleSystem } from '../particles/ParticleSystem';
 gsap.registerPlugin(ScrollTrigger);
 
 /** Shape order — must match the array passed to ParticleSystem.setShapes(). */
-export const SHAPE = { portrait: 0, globe: 1, map: 2, ribbons: 3, boxes: 4, cap: 5, network: 6, wisp: 7, frame: 8 } as const;
+export const SHAPE = { robot: 0, globe: 1, map: 2, ribbons: 3, boxes: 4, cap: 5, network: 6, wisp: 7, frame: 8 } as const;
 
 /** How many viewport heights of scrolling one timeline unit takes. */
 const SCREENS_PER_UNIT = 0.85;

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <!-- Abstract cover image — swap for real artwork/screenshots -->
+  <defs><filter id="b"><feGaussianBlur stdDeviation="60"/></filter></defs>
+  <rect width="800" height="600" fill="#14302b"/>
+  <g filter="url(#b)"><circle cx="1" cy="394" r="309" fill="#3f8f7f" opacity="0.55"/><circle cx="46" cy="77" r="171" fill="#9ad1c4" opacity="0.55"/><circle cx="676" cy="129" r="261" fill="#3f8f7f" opacity="0.55"/><circle cx="223" cy="519" r="154" fill="#9ad1c4" opacity="0.55"/></g>
+  <text x="40" y="560" font-family="sans-serif" font-size="22" letter-spacing="6" fill="#fff" opacity="0.6">VISUAL ASSETS</text>
+</svg>

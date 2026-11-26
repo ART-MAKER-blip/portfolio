@@ -41,7 +41,18 @@ Deploys to Vercel with `npx vercel deploy --prod` (settings in `vercel.json`).
 
 | What | Where |
 |---|---|
-| Card images (abstract covers) | `public/works/work-1.svg` … `work-5.svg`: any 4:3 image, e.g. your artwork |
-| Card titles / tags | `src/sections/data.ts` |
+| Card titles, tags and image descriptions | `src/sections/data.ts` |
 
 The Philippines outline in `public/philippines.svg` is hand-approximated, not cartographically accurate.
+
+## Card illustrations
+
+The five "Areas of work" images are particle drawings in the same style as the robot: 3D point clouds of a monitor with bounding boxes, a drawing tablet, design layers, a map with a pin, and a ledger with a calculator. To change or regenerate them:
+
+```bash
+node scripts/work-art.mjs /tmp/work-art
+for i in 1 2 3 4 5; do
+  rsvg-convert -w 800 -h 600 /tmp/work-art/work-$i.svg -o /tmp/work-art/work-$i.png
+  magick /tmp/work-art/work-$i.png -quality 82 public/works/work-$i.webp
+done
+```

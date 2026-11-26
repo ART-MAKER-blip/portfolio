@@ -8,7 +8,7 @@ gsap.registerPlugin(ScrollTrigger);
 export const SHAPE = { robot: 0, globe: 1, map: 2, ribbons: 3, boxes: 4, cap: 5, network: 6, wisp: 7, frame: 8 } as const;
 
 /** How many viewport heights of scrolling one timeline unit takes. */
-const SCREENS_PER_UNIT = 0.85;
+const SCREENS_PER_UNIT = 1.4; // was 0.85: more scrolling per stage, so each one lingers
 
 /**
  * One pinned master ScrollTrigger. The stage (100vh) is pinned while a
@@ -34,7 +34,24 @@ export function buildTimeline(system: ParticleSystem, reduced: boolean) {
 
   // 1. Hero → globe
   tl.to(system.state, { parallaxWeight: 0, duration: 0.6 }, 0.3);
-  hide($('.hero'), 0.45);
+  // the name disintegrates like the robot: each letter scatters upward, spins, blurs and fades
+  hide($('.hero-title'), 0.3);
+  hide($('.hero-hint'), 0.2, 0.2);
+  tl.to(
+    '.hero-name .char',
+    {
+      x: () => (reduced ? 0 : gsap.utils.random(-180, 180)),
+      y: () => (reduced ? 0 : gsap.utils.random(-260, -40)),
+      rotation: () => (reduced ? 0 : gsap.utils.random(-70, 70)),
+      opacity: 0,
+      filter: reduced ? 'blur(0px)' : 'blur(9px)',
+      duration: 0.5,
+      ease: 'power2.in',
+      stagger: { each: 0.014, from: 'random' },
+    },
+    0.25,
+  );
+  tl.set($('.hero'), { autoAlpha: 0 }, 1.0);
   morph(SHAPE.globe, 0.6);
 
   // 2. Globe
@@ -100,7 +117,7 @@ export function buildTimeline(system: ParticleSystem, reduced: boolean) {
     start: 'top top',
     end: () => `+=${window.innerHeight * tl.duration() * SCREENS_PER_UNIT}`,
     pin: true,
-    scrub: reduced ? true : 0.6,
+    scrub: reduced ? true : 1.1, // was 0.6: animations ease in more gently behind the scroll
     animation: tl,
     invalidateOnRefresh: true,
     onUpdate: (self) => {

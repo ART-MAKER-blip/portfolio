@@ -241,7 +241,7 @@ export class ParticleSystem {
 
     // Hover: every 3D model turns toward the cursor (smoothed). Shapes opt out with tilt: 0.
     const tilt = u.uTilt.value;
-    const k = 1 - Math.exp(-dt * 3);
+    const k = 1 - Math.exp(-dt * 2); // hover turn follows the cursor a little more slowly
     tilt.x += (this.mouseNdc.x * config.hoverYaw - tilt.x) * k;
     tilt.y += (-this.mouseNdc.y * config.hoverPitch - tilt.y) * k;
 

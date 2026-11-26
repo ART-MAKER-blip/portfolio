@@ -129,7 +129,6 @@ main {
   opacity: 1;
 }
 
-.hero-name,
 .hero-title {
   position: absolute;
   top: var(--pad);
@@ -139,8 +138,26 @@ main {
   letter-spacing: 0.02em;
 }
 
+/* Big name on the left of the robot; each letter is a span that drifts like a particle */
 .hero-name {
+  position: absolute;
   left: calc(var(--pad) + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  font-size: clamp(52px, 7.4vw, 128px);
+  font-weight: 300;
+  line-height: 0.96;
+  letter-spacing: -0.035em;
+}
+
+.hero-name .word {
+  display: block;
+}
+
+.hero-name .char {
+  display: inline-block;
+  will-change: transform, opacity, filter;
 }
 
 .hero-title {
@@ -336,8 +353,15 @@ main {
 }
 
 @media (max-width: 640px) {
+  .hero-name {
+    top: auto;
+    bottom: calc(var(--pad) * 3);
+    transform: none;
+    font-size: clamp(44px, 14vw, 72px);
+  }
+
   .hero-title {
-    top: calc(var(--pad) + 22px);
+    top: var(--pad);
     left: calc(var(--pad) + 8px);
     right: auto;
   }

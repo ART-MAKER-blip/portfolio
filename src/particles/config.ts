@@ -49,5 +49,5 @@ export const config = {
   hoverPitch: reducedMotion ? 0 : 0.4,
 
   /** Globe spin speed (radians / second). */
-  globeSpin: reducedMotion ? 0 : 0.12,
+  globeSpin: reducedMotion ? 0 : 0.07,
 };

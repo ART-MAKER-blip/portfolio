@@ -12,7 +12,7 @@ import { loadImage, sampleImage, sphere, ribbons, wisp, frame } from './particle
 import { sampleSdf, robotBust, robotEyes, capModel, cuboids, network3d } from './particles/models';
 import { buildTimeline } from './scroll/timeline';
 import { setupSmoothScroll } from './scroll/smooth';
-import { hideHeroForIntro, revealHero } from './sections/hero';
+import { hideHeroForIntro, revealHero, splitHeroName } from './sections/hero';
 import { setupGlobe } from './sections/globe';
 import { buildWorks, setupWavyFrames } from './sections/works';
 import { setupContact } from './sections/contact';
@@ -44,6 +44,7 @@ async function init() {
   const system = new ParticleSystem(canvas);
   system.resize();
   system.start(); // render the noise cloud while assets load
+  splitHeroName();
   hideHeroForIntro();
 
   // --- Load assets & build the 3D models ---
@@ -72,13 +73,13 @@ async function init() {
   step();
 
   const shapes: ShapeDef[] = [
-    { name: 'robot', positions: robot, rotation: (t) => Math.sin(t * 0.35) * 0.22 },
+    { name: 'robot', positions: robot, rotation: (t) => Math.sin(t * 0.22) * 0.22, offset: [1.65 * SIDE, 0.9 * LIFT, 0] }, // right of the name (lifted above it on phones)
     { name: 'globe', positions: sphere(n, SPHERE_RADIUS), rotation: (t) => t * config.globeSpin },
     { name: 'map', positions: map, tilt: 0.7 },
     { name: 'ribbons', positions: ribbons(n), drift: 1, tilt: 0.4 },
-    { name: 'boxes', positions: boxes, rotation: (t) => Math.sin(t * 0.25) * 0.3, offset: [1.7 * SIDE, 2.6 * LIFT, 0] },
-    { name: 'cap', positions: cap, rotation: (t) => t * 0.25, offset: [-2.5 * SIDE, 0.1, 0] },
-    { name: 'network', positions: network, rotation: (t) => t * 0.12, offset: [2.0 * SIDE, 2.4 * LIFT, 0] },
+    { name: 'boxes', positions: boxes, rotation: (t) => Math.sin(t * 0.16) * 0.3, offset: [1.7 * SIDE, 2.6 * LIFT, 0] },
+    { name: 'cap', positions: cap, rotation: (t) => t * 0.14, offset: [-2.5 * SIDE, 0.1, 0] },
+    { name: 'network', positions: network, rotation: (t) => t * 0.07, offset: [2.0 * SIDE, 2.4 * LIFT, 0] },
     { name: 'wisp', positions: wisp(n), drift: 0.8, alpha: 0.3, tilt: 0 },
     { name: 'frame', positions: frame(n, 5, 1.6), tilt: 0 },
   ];
@@ -125,7 +126,7 @@ async function init() {
       ScrollTrigger.refresh();
     },
   });
-  revealHero(reducedMotion, introDuration * 0.6);
+  revealHero(reducedMotion, introDuration * 0.4);
 
   if (import.meta.env.DEV) {
     // Debug hook for the screenshot/verification script.

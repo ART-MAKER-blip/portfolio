@@ -10,7 +10,7 @@ export function buildWorks() {
       <div class="card" style="--card-color:${p.color}">
         <div class="card-media">
           <div class="card-frame"></div>
-          <img class="card-img" src="${p.image}" alt="" aria-hidden="true" loading="lazy" width="800" height="600" />
+          <img class="card-img" src="${p.image}" alt="${p.alt}" loading="lazy" width="800" height="600" />
         </div>
         <div class="card-meta"><span class="card-client">${p.client}</span><span class="card-year">${p.year}</span></div>
       </div>`,

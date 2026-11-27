@@ -56,15 +56,13 @@ async function init() {
   await nextFrame();
 
   const n = config.count;
-  // Hero: a neutral 3D mannequin bust (generic human head and shoulders)
-  // ~30% of the points go on the front of the face (two nested areas, so the extra density
-  // fades out softly) so the brow, eye hollows, nose and lips read
-  const bustOpts = { scale: 1.25, offset: [0, 0.45, 0] as [number, number, number] };
-  const nInner = Math.floor(n * 0.15), nOuter = Math.floor(n * 0.15), nBody = n - nInner - nOuter;
+  // Hero: an abstract 3D display mannequin (featureless egg head, neck, shoulders, chest).
+  // A share of the points goes on the front of the chest so the muscles and collarbones read.
+  const bustOpts = { scale: 1.15, offset: [0, 0.7, 0] as [number, number, number] };
+  const nChest = Math.floor(n * 0.18), nBody = n - nChest;
   const face = new Float32Array(n * 3);
-  face.set(sampleSdf(mannequinBust, nBody, { min: [-1.65, -2.95, -0.75], max: [1.65, 1.35, 1.15], ...bustOpts }));
-  face.set(sampleSdf(mannequinBust, nOuter, { min: [-0.78, -1.0, 0.25], max: [0.78, 0.85, 1.15], ...bustOpts }), nBody * 3);
-  face.set(sampleSdf(mannequinBust, nInner, { min: [-0.55, -0.75, 0.5], max: [0.55, 0.42, 1.15], ...bustOpts }), (nBody + nOuter) * 3);
+  face.set(sampleSdf(mannequinBust, nBody, { min: [-1.7, -3.7, -0.8], max: [1.7, 1.15, 0.9], ...bustOpts }));
+  face.set(sampleSdf(mannequinBust, nChest, { min: [-1.2, -2.75, 0.05], max: [1.2, -1.3, 0.9], ...bustOpts }), nBody * 3);
   step();
   await nextFrame();
 

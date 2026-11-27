@@ -145,38 +145,32 @@ export function robotEyes(count: number, scale = 1, offset: Vec3 = [0, 0, 0]) {
 // ---------- Mannequin bust (hero) ----------
 
 /**
- * A neutral, generic human head and shoulders, like a display mannequin or a 3D
- * template: smooth skull, soft brow and cheekbones, closed eyes in gentle hollows,
- * a generic nose and lips, plain ears, neck and shoulders. Faces +z.
+ * An abstract display mannequin: a smooth, featureless egg-shaped head, a long neck
+ * with the neck muscles hinted, sloping shoulders, rounded deltoids, collarbones,
+ * a sculpted chest and arms hanging down. Faces +z.
  */
 export function mannequinBust(px: number, py: number, pz: number) {
   const ax = Math.abs(px);
-  let d = ellipsoid(px, py - 0.35, pz + 0.05, 0.78, 0.95, 0.88); // cranium
-  d = smin(d, ellipsoid(px, py + 0.25, pz - 0.12, 0.62, 0.68, 0.7), 0.3); // face and jaw
-  d = smin(d, ellipsoid(px, py + 0.78, pz - 0.42, 0.22, 0.17, 0.2), 0.15); // chin
-  d = smin(d, ellipsoid(ax - 0.4, py, pz - 0.45, 0.25, 0.2, 0.22), 0.2); // cheekbones
-  d = smin(d, ellipsoid(px, py - 0.32, pz - 0.7, 0.55, 0.1, 0.18), 0.12); // brow ridge
+  // egg head: rounded crown tapering to a narrow chin, no facial features
+  let d = ellipsoid(px, py - 0.3, pz, 0.6, 0.82, 0.7);
+  d = smin(d, ellipsoid(px, py + 0.18, pz - 0.1, 0.42, 0.55, 0.52), 0.35);
 
-  // eyes: soft hollows with closed lids, no detail
-  d = ssub(d, Math.hypot(ax - 0.3, py - 0.17, pz - 0.86) - 0.17, 0.12);
-  d = smin(d, ellipsoid(ax - 0.3, py - 0.15, pz - 0.72, 0.15, 0.09, 0.1), 0.05);
+  // neck with the two neck muscles running down to the collarbones
+  d = smin(d, capsule(px, py, pz, 0, -0.4, -0.05, 0, -1.35, -0.05, 0.25), 0.18);
+  d = smin(d, capsule(ax, py, pz, 0.24, -0.45, -0.02, 0.08, -1.42, 0.2, 0.065), 0.08);
 
-  // nose: bridge, tip, wings
-  let nose = capsule(px, py, pz, 0, 0.25, 0.82, 0, -0.12, 1.02, 0.07);
-  nose = smin(nose, Math.hypot(px, py + 0.15, pz - 1.0) - 0.1, 0.06);
-  nose = smin(nose, ellipsoid(px, py + 0.22, pz - 0.9, 0.17, 0.08, 0.1), 0.06);
-  d = smin(d, nose, 0.1);
+  // trapezius slopes and rounded shoulders
+  d = smin(d, capsule(ax, py, pz, 0.18, -1.2, -0.12, 0.98, -1.55, -0.1, 0.2), 0.22);
+  d = smin(d, Math.hypot(ax - 1.12, py + 1.78, pz + 0.04) - 0.38, 0.22);
 
-  // lips with a soft mouth line
-  d = smin(d, ellipsoid(px, py + 0.42, pz - 0.86, 0.22, 0.06, 0.1), 0.05);
-  d = smin(d, ellipsoid(px, py + 0.53, pz - 0.84, 0.19, 0.07, 0.1), 0.05);
-  d = ssub(d, ellipsoid(px, py + 0.475, pz - 0.92, 0.23, 0.012, 0.1), 0.015);
+  // torso, chest muscles, collarbones and the notch between them
+  d = smin(d, ellipsoid(px, py + 3.0, pz, 1.02, 1.6, 0.52), 0.3); // continues off the bottom of the screen
+  d = smin(d, ellipsoid(ax - 0.45, py + 2.05, pz - 0.34, 0.45, 0.28, 0.2), 0.16);
+  d = smin(d, capsule(ax, py, pz, 0.12, -1.5, 0.28, 0.95, -1.56, 0.1, 0.05), 0.05);
+  d = ssub(d, Math.hypot(px, py + 1.48, pz - 0.36) - 0.07, 0.05);
 
-  d = smin(d, ellipsoid(ax - 0.78, py - 0.12, pz, 0.1, 0.26, 0.16), 0.06); // ears
-
-  // neck and shoulders
-  d = smin(d, capsule(px, py, pz, 0, -0.6, -0.1, 0, -1.5, -0.1, 0.38), 0.2);
-  d = smin(d, ellipsoid(px, py + 2.15, pz + 0.12, 1.6, 0.68, 0.46), 0.35);
+  // upper arms hanging down
+  d = smin(d, capsule(ax, py, pz, 1.2, -1.9, -0.05, 1.32, -3.3, -0.05, 0.27), 0.15);
   return d;
 }
 

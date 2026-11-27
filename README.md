@@ -21,7 +21,7 @@ Deploys to Vercel with `npx vercel deploy --prod` (settings in `vercel.json`).
 
 | Stage | Particle shape | Content |
 |---|---|---|
-| 1. Hero | Neutral 3D mannequin bust | "Hi, I'm Art Nathaniel Malong"; letters assemble and disintegrate with the scroll |
+| 1. Hero | Abstract 3D display mannequin (egg head, neck, shoulders, chest) | "Hi, I'm Art Nathaniel Malong"; letters assemble and disintegrate with the scroll |
 | 2. Globe | Spinning sphere | "Front-end developer" · "2D & 3D data annotation" |
 | 3. Location | Outline of the Philippines, extruded | Based in the Philippines |
 | 3b. Zoom | Map zooms into Mindanao, pin on Cagayan de Oro | Cagayan de Oro, Mindanao |

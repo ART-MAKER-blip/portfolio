@@ -21,7 +21,7 @@ Deploys to Vercel with `npx vercel deploy --prod` (settings in `vercel.json`).
 
 | Stage | Particle shape | Content |
 |---|---|---|
-| 1. Hero | 3D robot bust (glowing eyes, antenna, chest core) | "Hi, I'm Art Nathaniel Malong"; letters assemble and disintegrate with the scroll |
+| 1. Hero | 3D particle portrait (from a photo) | "Hi, I'm Art Nathaniel Malong"; letters assemble and disintegrate with the scroll |
 | 2. Globe | Spinning sphere | "Front-end developer" · "2D & 3D data annotation" |
 | 3. Location | Outline of the Philippines, extruded | Based in the Philippines |
 | 3b. Zoom | Map zooms into Mindanao, pin on Cagayan de Oro | Cagayan de Oro, Mindanao |
@@ -56,3 +56,13 @@ for i in 1 2 3 4 5; do
   magick /tmp/work-art/work-$i.png -quality 82 public/works/work-$i.webp
 done
 ```
+
+## Hero portrait
+
+The hero is a 3D particle portrait stored as a point cloud in `public/face.bin` (int16 xyz × 8000, pre-shuffled). It is generated from a photo, which is not part of the repo:
+
+```bash
+python3 scripts/face-points.py /path/to/photo.png public/face.bin
+```
+
+The script cuts the subject out of a plain, low-saturation background, sculpts depth (head, nose, brow, cheeks, lips, chin, eye sockets, neck, shoulders, plus fine relief from shading) and scatters points by brightness. The facial feature positions in the script are in the source photo's pixels, so update them for a different photo. The earlier robot bust is still available as `robotBust` in `src/particles/models.ts`.

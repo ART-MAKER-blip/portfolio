@@ -5,7 +5,7 @@ import type { ParticleSystem } from '../particles/ParticleSystem';
 gsap.registerPlugin(ScrollTrigger);
 
 /** Shape order — must match the array passed to ParticleSystem.setShapes(). */
-export const SHAPE = { robot: 0, globe: 1, map: 2, cdo: 3, ribbons: 4, cap: 5, network: 6, wisp: 7, frame: 8 } as const;
+export const SHAPE = { portrait: 0, globe: 1, map: 2, cdo: 3, ribbons: 4, cap: 5, network: 6, wisp: 7, frame: 8 } as const;
 
 /** How many viewport heights of scrolling one timeline unit takes. */
 const SCREENS_PER_UNIT = 1.4; // was 0.85: more scrolling per stage, so each one lingers
@@ -34,7 +34,7 @@ export function buildTimeline(system: ParticleSystem, reduced: boolean) {
 
   // 1. Hero → globe
   tl.to(system.state, { parallaxWeight: 0, duration: 0.6 }, 0.3);
-  // the name disintegrates like the robot: each letter scatters upward, spins, blurs and fades
+  // the name disintegrates like the portrait: each letter scatters upward, spins, blurs and fades
   hide($('.hero-title'), 0.3);
   hide($('.hero-hint'), 0.2, 0.2);
   tl.to(

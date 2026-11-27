@@ -9,7 +9,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { config, reducedMotion, isMobile } from './particles/config';
 import { ParticleSystem, type ShapeDef } from './particles/ParticleSystem';
 import { loadImage, sampleImage, sphere, ribbons, wisp, frame, zoomMap } from './particles/shapes';
-import { sampleSdf, robotBust, robotEyes, capModel, network3d } from './particles/models';
+import { sampleSdf, capModel, network3d } from './particles/models';
 import { buildTimeline } from './scroll/timeline';
 import { setupSmoothScroll } from './scroll/smooth';
 import { hideHeroForIntro, revealHero, splitHeroName } from './sections/hero';
@@ -37,6 +37,24 @@ const LIFT = isMobile ? 1 : 0;
 const counter = document.querySelector<HTMLElement>('.preloader-count')!;
 const setLoad = (p: number) => (counter.textContent = `${Math.round(p * 100)}%`);
 
+/**
+ * Load the portrait point cloud (int16 xyz × 8000) and fit it to `count` points:
+ * the file is pre-shuffled, so a prefix is an even sample; extra points are jittered copies.
+ */
+async function loadFace(url: string, count: number, scale: number): Promise<Float32Array> {
+  const src = new Int16Array(await (await fetch(url)).arrayBuffer());
+  const m = src.length / 3;
+  const out = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const j = (i % m) * 3;
+    const jit = i < m ? 0 : 0.008;
+    out[i * 3] = (src[j] / 8000) * scale + (Math.random() - 0.5) * jit;
+    out[i * 3 + 1] = (src[j + 1] / 8000) * scale + (Math.random() - 0.5) * jit;
+    out[i * 3 + 2] = (src[j + 2] / 8000) * scale + (Math.random() - 0.5) * jit;
+  }
+  return out;
+}
+
 /** Let the browser paint (so the loading % updates) between heavy shape builds. */
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
@@ -56,10 +74,8 @@ async function init() {
   await nextFrame();
 
   const n = config.count;
-  const ROBOT = 1.45;
-  const robot = sampleSdf(robotBust, n, { min: [-1.7, -2.6, -0.85], max: [1.7, 1.45, 1.0], scale: ROBOT, offset: [0, -0.1, 0] });
-  // pack the eyeballs densely so they glow
-  robot.set(robotEyes(Math.floor(n * 0.035), ROBOT, [0, -0.1, 0]), Math.floor(n * 0.965) * 3);
+  // Hero: 3D particle portrait (point cloud built from a photo by scripts/face-points.py)
+  const face = await loadFace(`${base}face.bin`, n, 1.05);
   step();
   await nextFrame();
 
@@ -80,7 +96,7 @@ async function init() {
   step();
 
   const shapes: ShapeDef[] = [
-    { name: 'robot', positions: robot, rotation: (t) => Math.sin(t * 0.22) * 0.22, offset: [1.65 * SIDE, 0.9 * LIFT, 0] }, // right of the name (lifted above it on phones)
+    { name: 'portrait', positions: face, rotation: (t) => Math.sin(t * 0.22) * 0.22, offset: [1.9 * SIDE, 0.6 * LIFT - 0.2 * SIDE, 0] }, // right of the name (lifted above it on phones)
     { name: 'globe', positions: sphere(n, SPHERE_RADIUS), rotation: (t) => t * config.globeSpin },
     { name: 'map', positions: map, tilt: 0.7 },
     { name: 'cdo', positions: cdo, tilt: 0.5 },
@@ -126,7 +142,7 @@ async function init() {
     else system.start();
   });
 
-  // --- Preloader: assemble from noise into the robot ---
+  // --- Preloader: assemble from noise into the portrait ---
   const preloader = document.querySelector<HTMLElement>('.preloader')!;
   const introDuration = reducedMotion ? 0.8 : 2.8;
   gsap.to(preloader, { autoAlpha: 0, duration: 0.6, delay: 0.2 });

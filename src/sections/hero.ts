@@ -22,7 +22,7 @@ export function hideHeroForIntro() {
   gsap.set('.hero-intro .char', { opacity: 0 });
 }
 
-/** The name settles out of a blurred scatter while the robot assembles, then the labels fade in. */
+/** The name settles out of a blurred scatter while the portrait assembles, then the labels fade in. */
 export function revealHero(reduced: boolean, delay = 0) {
   const tl = gsap.timeline({ delay });
   tl.fromTo(

@@ -212,52 +212,6 @@ export function sampleSdf(sdf: Sdf, count: number, opts: SdfSampleOptions): Floa
   return out;
 }
 
-// ---------- 3D annotation cuboids (Experience) ----------
-
-/** Wireframe 3D boxes like LiDAR / 3D annotation cuboids, with corner handles and label tabs. */
-export function cuboids(count: number): Float32Array {
-  const boxes = [
-    { w: 2.4, h: 1.7, d: 1.4, x: -0.2, y: 0.45, z: -0.6, yaw: 0.5 },
-    { w: 1.2, h: 1.6, d: 1.0, x: 1.6, y: -0.2, z: 0.3, yaw: -0.4 },
-    { w: 1.1, h: 0.75, d: 0.9, x: -1.6, y: -1.15, z: 0.4, yaw: 0.25 },
-    { w: 0.9, h: 0.9, d: 0.9, x: 0.6, y: -1.4, z: 0.8, yaw: 0.9 },
-    { w: 0.7, h: 1.1, d: 0.6, x: -2.2, y: 0.9, z: -0.2, yaw: -0.3 },
-  ];
-  const weight = boxes.map((b) => 4 * (b.w + b.h + b.d));
-  const total = weight.reduce((a, b) => a + b, 0);
-  const out = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    let t = Math.random() * total;
-    let b = boxes[0];
-    for (let k = 0; k < boxes.length; k++) if ((t -= weight[k]) <= 0) { b = boxes[k]; break; }
-    const hw = b.w / 2, hh = b.h / 2, hd = b.d / 2;
-    const kind = Math.random();
-    let x: number, y: number, z: number;
-    const sx = Math.random() < 0.5 ? -1 : 1, sy = Math.random() < 0.5 ? -1 : 1, sz = Math.random() < 0.5 ? -1 : 1;
-    if (kind < 0.84) {
-      // one of the 12 edges
-      const axis = Math.random() * (b.w + b.h + b.d);
-      if (axis < b.w) { x = (Math.random() - 0.5) * b.w; y = sy * hh; z = sz * hd; }
-      else if (axis < b.w + b.h) { x = sx * hw; y = (Math.random() - 0.5) * b.h; z = sz * hd; }
-      else { x = sx * hw; y = sy * hh; z = (Math.random() - 0.5) * b.d; }
-      x += gauss() * 0.01; y += gauss() * 0.01; z += gauss() * 0.01;
-    } else if (kind < 0.95) {
-      // corner handles
-      x = sx * hw + gauss() * 0.035; y = sy * hh + gauss() * 0.035; z = sz * hd + gauss() * 0.035;
-    } else {
-      // label tab on the top front-left edge
-      x = -hw + Math.random() * Math.min(0.5, b.w * 0.45);
-      y = hh + 0.02 + Math.random() * 0.13;
-      z = hd;
-    }
-    const c = Math.cos(b.yaw), s = Math.sin(b.yaw);
-    out[i * 3] = b.x + c * x + s * z;
-    out[i * 3 + 1] = b.y + y;
-    out[i * 3 + 2] = b.z - s * x + c * z;
-  }
-  return out;
-}
-
 // ---------- 3D network (Skills) ----------
 
 function randomDir(): Vec3 {

@@ -14,9 +14,9 @@ export interface Project {
 const base = import.meta.env.BASE_URL;
 
 export const projects: Project[] = [
-  { client: 'Data annotation & QA', year: 'Present', color: '#c9b8ff', image: `${base}works/work-1.webp`, alt: 'A monitor showing an image with two annotation bounding boxes and a check mark', url: '#contact' },
+  { client: 'Data annotation', year: '2D & 3D', color: '#c9b8ff', image: `${base}works/work-1.webp`, alt: 'A monitor showing an image with two annotation bounding boxes and a check mark', url: '#contact' },
   { client: 'Digital illustration', year: 'NC III', color: '#ffb4a2', image: `${base}works/work-2.webp`, alt: 'A drawing tablet with a stylus sketching a curved line', url: '#contact' },
   { client: 'Visual asset creation', year: 'Design', color: '#9ad1c4', image: `${base}works/work-3.webp`, alt: 'Stacked design layers with a circle, triangle and square', url: '#contact' },
-  { client: 'Site mapping & documentation', year: 'OJT', color: '#f4d35e', image: `${base}works/work-4.webp`, alt: 'A folded map with a dotted route, a location pin and a golf flag', url: '#contact' },
-  { client: 'Bookkeeping & records', year: 'OJT', color: '#8fb8ff', image: `${base}works/work-5.webp`, alt: 'An open ledger beside a calculator and a stack of coins', url: '#contact' },
+  { client: 'Front-end development', year: 'HTML · CSS · JS', color: '#f4d35e', image: `${base}works/work-4.webp`, alt: 'A browser window with a page layout and a code tag', url: '#contact' },
+  { client: 'Bash & cloud computing', year: 'Linux · Cloud', color: '#8fb8ff', image: `${base}works/work-5.webp`, alt: 'A terminal window with command prompts syncing to a cloud', url: '#contact' },
 ];

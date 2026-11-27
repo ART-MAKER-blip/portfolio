@@ -251,3 +251,48 @@ export function noiseCloud(count: number, radius = 5): Float32Array {
   }
   return out;
 }
+
+/**
+ * Zoom into one point of an existing map shape: every particle moves outward from
+ * `focus` by `zoom` (points that leave the screen simply fly off), then a share of the
+ * points form a location pin and a ripple ring on the focus. Morphing map → this looks
+ * like a camera zoom.
+ */
+export function zoomMap(
+  map: Float32Array,
+  focus: [number, number],
+  zoom: number,
+  target: [number, number],
+  pinShare = 0.12,
+): Float32Array {
+  const n = map.length / 3;
+  const out = new Float32Array(map.length);
+  const nPin = Math.floor(n * pinShare);
+  for (let i = 0; i < n - nPin; i++) {
+    out[i * 3] = (map[i * 3] - focus[0]) * zoom + target[0];
+    out[i * 3 + 1] = (map[i * 3 + 1] - focus[1]) * zoom + target[1];
+    out[i * 3 + 2] = map[i * 3 + 2] * 1.4;
+  }
+  const [tx, ty] = target;
+  for (let i = n - nPin; i < n; i++) {
+    const k = Math.random();
+    let x: number, y: number, z: number;
+    if (k < 0.45) {
+      // pin head: sphere
+      const u = Math.random() * 2 - 1, a = Math.random() * TAU, r = Math.sqrt(1 - u * u) * 0.3;
+      x = tx + Math.cos(a) * r; y = ty + 1.0 + u * 0.3; z = 0.3 + Math.sin(a) * r;
+    } else if (k < 0.75) {
+      // pin body: cone down to the point
+      const s = Math.random(), a = Math.random() * TAU, r = 0.24 * (1 - s);
+      x = tx + Math.cos(a) * r; y = ty + 0.85 - s * 0.85; z = 0.3 + Math.sin(a) * r;
+    } else {
+      // ripple rings on the ground around the point
+      const ring = Math.random() < 0.6 ? 0.35 : 0.65, a = Math.random() * TAU;
+      x = tx + Math.cos(a) * ring + gauss() * 0.01; y = ty + Math.sin(a) * ring * 0.35 + gauss() * 0.01; z = 0.3;
+    }
+    out[i * 3] = x;
+    out[i * 3 + 1] = y;
+    out[i * 3 + 2] = z;
+  }
+  return out;
+}

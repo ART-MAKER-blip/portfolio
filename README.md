@@ -21,18 +21,18 @@ Deploys to Vercel with `npx vercel deploy --prod` (settings in `vercel.json`).
 
 | Stage | Particle shape | Content |
 |---|---|---|
-| 1. Hero | 3D robot bust (glowing eyes, antenna, chest core) | Name and title |
-| 2. Globe | Spinning sphere | "Reviewing AI training data" · "Working remotely" |
+| 1. Hero | 3D robot bust (glowing eyes, antenna, chest core) | "Hi, I'm Art Nathaniel Malong"; letters assemble and disintegrate with the scroll |
+| 2. Globe | Spinning sphere | "Front-end developer" · "2D & 3D data annotation" |
 | 3. Location | Outline of the Philippines, extruded | Based in the Philippines |
-| 4. About | Drifting ribbons | Professional summary |
-| 5. Experience | 3D annotation cuboids | Data Annotation Reviewer; Technical Assistant / OJT |
-| 6. Education | 3D graduation cap | BSIT (Digital Arts); NC III in Digital Arts (TESDA) |
-| 7. Skills | 3D network with four hubs | The four skill groups |
-| 8. Areas of work | Faint wisp + card strip | Five focus areas |
-| 9. Contact | Frame around the email | artmalong123@gmail.com |
+| 3b. Zoom | Map zooms into Mindanao, pin on Cagayan de Oro | Cagayan de Oro, Mindanao |
+| 4. About me | Drifting ribbons | Front-end, Python/Java/Go, 2D & 3D data annotation, Bash, cloud |
+| 5. Education | 3D graduation cap | BSIT (Digital Arts); NC III in Digital Arts (TESDA) |
+| 6. Skills | 3D network | Front-end, programming, Bash & cloud, data annotation, digital arts |
+| 7. Areas of work | Faint wisp + card strip | Five particle-art cards |
+| 8. Contact | Frame around the email | artmalong123@gmail.com |
 
 - The scroll choreography is in `src/scroll/timeline.ts`. Shape order there (`SHAPE`) must match the `shapes` array in `src/main.ts`.
-- **3D models** are in `src/particles/models.ts`: the robot and cap are signed distance functions, and `sampleSdf` scatters particles over their surfaces. The cuboids and network are procedural 3D point sets.
+- **3D models** are in `src/particles/models.ts`: the robot and cap are signed distance functions, and `sampleSdf` scatters particles over their surfaces. The network is a procedural 3D point set. The CDO zoom (`zoomMap` in `shapes.ts`) scales the map's own particles outward from Cagayan de Oro and turns some of them into a pin.
 - **Hover:** every model turns toward the cursor (`hoverYaw` / `hoverPitch` in `config.ts`). Set a shape's `tilt: 0` in `src/main.ts` to keep it fixed, as the card wisp and contact frame are. Each shape's `offset` places it beside its text and is applied after the turn, so it turns in place.
 - Other shapes (sphere, ribbons, wisp, frame, image sampler for the map) are in `src/particles/shapes.ts`.
 - Visual tuning (point count, size, noise, mouse repulsion) is in `src/particles/config.ts`.
@@ -47,7 +47,7 @@ The Philippines outline in `public/philippines.svg` is hand-approximated, not ca
 
 ## Card illustrations
 
-The five "Areas of work" images are particle drawings in the same style as the robot: 3D point clouds of a monitor with bounding boxes, a drawing tablet, design layers, a map with a pin, and a ledger with a calculator. To change or regenerate them:
+The five "Areas of work" images are particle drawings in the same style as the robot: 3D point clouds of a monitor with bounding boxes, a drawing tablet, design layers, a browser window with a </> tag, and a terminal syncing to a cloud. To change or regenerate them:
 
 ```bash
 node scripts/work-art.mjs /tmp/work-art

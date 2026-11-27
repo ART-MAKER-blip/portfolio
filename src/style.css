@@ -138,12 +138,27 @@ main {
   letter-spacing: 0.02em;
 }
 
-/* Big name on the left of the robot; each letter is a span that drifts like a particle */
-.hero-name {
+/* "Hi, I'm" + big name on the left of the robot; each letter is a span that drifts like a particle */
+.hero-intro {
   position: absolute;
   left: calc(var(--pad) + 8px);
   top: 50%;
   transform: translateY(-50%);
+}
+
+.hero-hi {
+  margin: 0 0 0.5em 0.12em;
+  font-size: clamp(18px, 1.9vw, 28px);
+  font-weight: 300;
+  color: var(--fg-muted);
+}
+
+.hero-hi .word,
+.hero-hi .char {
+  display: inline-block;
+}
+
+.hero-name {
   margin: 0;
   font-size: clamp(52px, 7.4vw, 128px);
   font-weight: 300;
@@ -155,7 +170,7 @@ main {
   display: block;
 }
 
-.hero-name .char {
+.hero-intro .char {
   display: inline-block;
   will-change: transform, opacity, filter;
 }
@@ -353,10 +368,13 @@ main {
 }
 
 @media (max-width: 640px) {
-  .hero-name {
+  .hero-intro {
     top: auto;
     bottom: calc(var(--pad) * 3);
     transform: none;
+  }
+
+  .hero-name {
     font-size: clamp(44px, 14vw, 72px);
   }
 

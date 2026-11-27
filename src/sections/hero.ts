@@ -2,9 +2,9 @@ import { gsap } from 'gsap';
 
 const rand = gsap.utils.random;
 
-/** Split the hero name into one span per letter so each can drift like a particle. */
+/** Split "Hi, I'm" and the name into one span per letter so each can drift like a particle. */
 export function splitHeroName() {
-  document.querySelectorAll<HTMLElement>('.hero-name .word').forEach((word) => {
+  document.querySelectorAll<HTMLElement>('.hero-intro .word').forEach((word) => {
     const text = word.textContent ?? '';
     word.textContent = '';
     for (const ch of text) {
@@ -19,14 +19,14 @@ export function splitHeroName() {
 
 export function hideHeroForIntro() {
   gsap.set('.hero-title, .hero-hint', { autoAlpha: 0 });
-  gsap.set('.hero-name .char', { opacity: 0 });
+  gsap.set('.hero-intro .char', { opacity: 0 });
 }
 
 /** The name settles out of a blurred scatter while the robot assembles, then the labels fade in. */
 export function revealHero(reduced: boolean, delay = 0) {
   const tl = gsap.timeline({ delay });
   tl.fromTo(
-    '.hero-name .char',
+    '.hero-intro .char',
     {
       opacity: 0,
       x: () => (reduced ? 0 : rand(-140, 140)),

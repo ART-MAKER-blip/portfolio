@@ -8,8 +8,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import { config, reducedMotion, isMobile } from './particles/config';
 import { ParticleSystem, type ShapeDef } from './particles/ParticleSystem';
-import { loadImage, sampleImage, sphere, ribbons, wisp, frame } from './particles/shapes';
-import { sampleSdf, robotBust, robotEyes, capModel, cuboids, network3d } from './particles/models';
+import { loadImage, sampleImage, sphere, ribbons, wisp, frame, zoomMap } from './particles/shapes';
+import { sampleSdf, robotBust, robotEyes, capModel, network3d } from './particles/models';
 import { buildTimeline } from './scroll/timeline';
 import { setupSmoothScroll } from './scroll/smooth';
 import { hideHeroForIntro, revealHero, splitHeroName } from './sections/hero';
@@ -68,7 +68,12 @@ async function init() {
   const map = sampleImage(mapImg, n, { height: 5.0, edgeBias: 0.55, edgeWidth: 2, depth: 0.45 });
   step();
   await nextFrame();
-  const boxes = cuboids(n);
+  // Cagayan de Oro (8.48° N, 124.65° E) in the map shape's world units. The map SVG uses
+  // x = (lon − 116.8)·60, y = (21.2 − lat)·60, and sampleImage centres the islands' bounding
+  // box (x 24…588, y 156…924) and scales its height to 5 units.
+  const mapUnit = 5.0 / (924 - 156);
+  const CDO: [number, number] = [((124.65 - 116.8) * 60 - 306) * mapUnit, -((21.2 - 8.48) * 60 - 540) * mapUnit];
+  const cdo = zoomMap(map, CDO, 3.4, [-0.6 * SIDE, -0.35]);
   const network = network3d(n);
   step();
 
@@ -76,8 +81,8 @@ async function init() {
     { name: 'robot', positions: robot, rotation: (t) => Math.sin(t * 0.22) * 0.22, offset: [1.65 * SIDE, 0.9 * LIFT, 0] }, // right of the name (lifted above it on phones)
     { name: 'globe', positions: sphere(n, SPHERE_RADIUS), rotation: (t) => t * config.globeSpin },
     { name: 'map', positions: map, tilt: 0.7 },
+    { name: 'cdo', positions: cdo, tilt: 0.5 },
     { name: 'ribbons', positions: ribbons(n), drift: 1, tilt: 0.4 },
-    { name: 'boxes', positions: boxes, rotation: (t) => Math.sin(t * 0.16) * 0.3, offset: [1.7 * SIDE, 2.6 * LIFT, 0] },
     { name: 'cap', positions: cap, rotation: (t) => t * 0.14, offset: [-2.5 * SIDE, 0.1, 0] },
     { name: 'network', positions: network, rotation: (t) => t * 0.07, offset: [2.0 * SIDE, 2.4 * LIFT, 0] },
     { name: 'wisp', positions: wisp(n), drift: 0.8, alpha: 0.3, tilt: 0 },

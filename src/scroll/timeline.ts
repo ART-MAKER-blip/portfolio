@@ -5,7 +5,7 @@ import type { ParticleSystem } from '../particles/ParticleSystem';
 gsap.registerPlugin(ScrollTrigger);
 
 /** Shape order — must match the array passed to ParticleSystem.setShapes(). */
-export const SHAPE = { robot: 0, globe: 1, map: 2, ribbons: 3, boxes: 4, cap: 5, network: 6, wisp: 7, frame: 8 } as const;
+export const SHAPE = { robot: 0, globe: 1, map: 2, cdo: 3, ribbons: 4, cap: 5, network: 6, wisp: 7, frame: 8 } as const;
 
 /** How many viewport heights of scrolling one timeline unit takes. */
 const SCREENS_PER_UNIT = 1.4; // was 0.85: more scrolling per stage, so each one lingers
@@ -38,7 +38,7 @@ export function buildTimeline(system: ParticleSystem, reduced: boolean) {
   hide($('.hero-title'), 0.3);
   hide($('.hero-hint'), 0.2, 0.2);
   tl.to(
-    '.hero-name .char',
+    '.hero-intro .char',
     {
       x: () => (reduced ? 0 : gsap.utils.random(-180, 180)),
       y: () => (reduced ? 0 : gsap.utils.random(-260, -40)),
@@ -59,56 +59,56 @@ export function buildTimeline(system: ParticleSystem, reduced: boolean) {
   tl.addLabel('globe', 1.8);
   hide($('.globe'), 2.15);
 
-  // 3. Location
+  // 3. Location: the Philippines…
   morph(SHAPE.map, 2.3);
   show($('.location'), 2.95);
-  tl.addLabel('location', 3.45);
-  hide($('.location'), 3.8);
+  tl.addLabel('location', 3.4);
+  hide($('.location'), 3.65);
 
-  // 4. About (summary)
-  morph(SHAPE.ribbons, 3.9);
-  show($('.approach'), 4.5);
-  tl.addLabel('approach', 5.1);
-  hide($('.approach'), 5.75);
+  // …then zoom into Mindanao: every particle flies outward from Cagayan de Oro and a pin drops on it
+  morph(SHAPE.cdo, 3.7, 1.1);
+  show($('.cdo'), 4.45);
+  tl.addLabel('cdo', 4.95);
+  hide($('.cdo'), 5.35);
 
-  // 5. Experience — longer copy, so it holds a little longer
-  morph(SHAPE.boxes, 5.9);
-  show($('.experience'), 6.5);
-  tl.addLabel('experience', 7.15);
-  hide($('.experience'), 7.95);
+  // 4. About me (the zoomed map dissolves into the ribbons)
+  morph(SHAPE.ribbons, 5.45);
+  show($('.approach'), 6.05);
+  tl.addLabel('approach', 6.65);
+  hide($('.approach'), 7.3);
 
-  // 6. Education & certifications
-  morph(SHAPE.cap, 8.1);
-  show($('.education'), 8.7);
-  tl.addLabel('education', 9.3);
-  hide($('.education'), 9.9);
+  // 5. Education & certifications
+  morph(SHAPE.cap, 7.45);
+  show($('.education'), 8.05);
+  tl.addLabel('education', 8.65);
+  hide($('.education'), 9.25);
 
-  // 7. Skills
-  morph(SHAPE.network, 10.05);
-  show($('.skills'), 10.65);
-  tl.addLabel('skills', 11.25);
-  hide($('.skills'), 11.9);
+  // 6. Skills
+  morph(SHAPE.network, 9.4);
+  show($('.skills'), 10.0);
+  tl.addLabel('skills', 10.6);
+  hide($('.skills'), 11.3);
 
-  // 8. Areas of work — horizontal strip moves with scroll
-  morph(SHAPE.wisp, 11.95, 0.8);
-  tl.fromTo($('.works'), { autoAlpha: 0, y: reduced ? 0 : 80 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out' }, 12.2);
+  // 7. Areas of work: horizontal strip moves with scroll
+  morph(SHAPE.wisp, 11.35, 0.8);
+  tl.fromTo($('.works'), { autoAlpha: 0, y: reduced ? 0 : 80 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out' }, 11.6);
   tl.fromTo(
     strip,
     { x: () => (reduced ? 0 : window.innerWidth * 0.25) },
     { x: () => -(strip.scrollWidth - window.innerWidth), duration: 3.0, ease: 'none' },
-    12.2,
+    11.6,
   );
-  tl.addLabel('works', 13.7);
-  hide($('.works'), 15.2, 0.35);
+  tl.addLabel('works', 13.1);
+  hide($('.works'), 14.6, 0.35);
 
-  // 9. Outro
-  show($('.more'), 15.5, 0.3);
-  tl.addLabel('more', 15.85);
-  hide($('.more'), 16.1, 0.3);
-  morph(SHAPE.frame, 16.2, 1.1);
-  show($('.contact'), 16.9, 0.4);
-  tl.addLabel('contact', 17.55);
-  tl.to({}, { duration: 0.3 }, 17.55); // hold at the end
+  // 8. Outro
+  show($('.more'), 14.9, 0.3);
+  tl.addLabel('more', 15.25);
+  hide($('.more'), 15.5, 0.3);
+  morph(SHAPE.frame, 15.6, 1.1);
+  show($('.contact'), 16.3, 0.4);
+  tl.addLabel('contact', 16.95);
+  tl.to({}, { duration: 0.3 }, 16.95); // hold at the end
 
   tl.addLabel('hero', 0);
 

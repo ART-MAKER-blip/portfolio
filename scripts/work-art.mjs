@@ -137,55 +137,55 @@ function render(name, { yaw = -0.5, pitch = 0.32, dist = 6, zoom = 1, cy = 0 } =
   render('work-3', { yaw: -0.55, pitch: 0.55, zoom: 1.05, dist: 6.4 });
 }
 
-// 4. Site mapping & documentation — folded map, route, pin and a golf flag
+// 4. Front-end development — browser window with a page layout and a </> tag
 {
-  const panels = [[-1.8, 0.0], [-0.6, 0.18], [0.6, 0.0], [1.8, 0.18]];
-  for (let k = 0; k < 3; k++) {
-    const [x0, y0] = panels[k], [x1, y1] = panels[k + 1];
-    const a = [x0, y0, -1.1], u = [x1 - x0, y1 - y0, 0], v = [0, 0, 2.2];
-    plane(a, u, v, 1300, 0.45);
-    rectEdges(a, u, v, 900, 0.006, 0.9);
-    for (let g = 1; g < 4; g++) line(add(a, mul(v, g / 4)), add(add(a, mul(v, g / 4)), u), 160, 0.004, 0.5);
-  }
-  // dotted route
-  for (let i = 0; i < 26; i++) {
-    const t = i / 25, x = -1.5 + t * 3.0, z = 0.6 - Math.sin(t * Math.PI * 1.6) * 0.7;
-    const y = x < -0.6 ? 0.03 + ((x + 1.8) / 1.2) * 0.18 : x < 0.6 ? 0.21 - ((x + 0.6) / 1.2) * 0.18 : 0.03 + ((x - 0.6) / 1.2) * 0.18;
-    disc([x, y + 0.01, z], 0.045, 40, 'y', 1.2);
-  }
-  // location pin
-  sphere([-1.25, 1.25, 0.55], 0.32, 1500, 0.9);
-  circle([-1.25, 1.25, 0.88], 0.12, 250, 'z', 0.006, 1.3);
-  for (let i = 0; i < 900; i++) { const s = rand(), a = rand() * Math.PI * 2, r = 0.26 * (1 - s); P([-1.25 + Math.cos(a) * r, 1.05 - s * 0.98, 0.55 + Math.sin(a) * r], 0.85); }
-  // golf flag at the end of the route
-  line([1.45, 0.1, 0.45], [1.45, 1.45, 0.45], 600, 0.008, 1.1);
-  plane([1.45, 1.05, 0.45], [0.55, 0.2, 0], [0, 0.38, 0], 700, 0.9);
-  circle([1.45, 0.11, 0.45], 0.16, 300, 'y', 0.006, 1);
-  render('work-4', { yaw: -0.35, pitch: 0.5, zoom: 1.0, dist: 6.4, cy: 0.35 });
+  const o = [-1.9, -1.15, 0];
+  box([0, 0.05, -0.1], [3.8, 2.5, 0.12], 2600, 2600); // window
+  line([-1.9, 0.95, 0.0], [1.9, 0.95, 0.0], 500, 0.006, 1); // title bar
+  for (let k = 0; k < 3; k++) circle([-1.7 + k * 0.2, 1.1, 0.01], 0.06, 120, 'z', 0.004, 1.2);
+  plane(add(o, [0.6, 2.25, 0.01]), [2.9, 0, 0], [0, 0.07, 0], 250, 0.7); // address bar
+  plane(add(o, [0.25, 1.65, 0.01]), [3.3, 0, 0], [0, 0.3, 0], 600, 0.75); // page header
+  plane(add(o, [0.25, 0.25, 0.01]), [0.75, 0, 0], [0, 1.25, 0], 600, 0.55); // sidebar
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) rectEdges(add(o, [1.2 + c * 0.82, 0.3 + r * 0.66, 0.01]), [0.68, 0, 0], [0, 0.52, 0], 420, 0.005, 0.9); // cards
+  // floating </> tag in front of the window
+  const t = [0.3, -0.25, 0.9];
+  line(add(t, [-0.85, 0, 0]), add(t, [-0.55, 0.3, 0]), 260, 0.01, 1.3); // <
+  line(add(t, [-0.85, 0, 0]), add(t, [-0.55, -0.3, 0]), 260, 0.01, 1.3);
+  line(add(t, [-0.15, -0.38, 0]), add(t, [0.15, 0.38, 0]), 300, 0.01, 1.3); // /
+  line(add(t, [0.85, 0, 0]), add(t, [0.55, 0.3, 0]), 260, 0.01, 1.3); // >
+  line(add(t, [0.85, 0, 0]), add(t, [0.55, -0.3, 0]), 260, 0.01, 1.3);
+  render('work-4', { yaw: -0.38, pitch: 0.16, zoom: 1.0, dist: 6.2 });
 }
 
-// 5. Bookkeeping & records — open ledger, calculator and coins
+// 5. Bash & cloud computing — a terminal window with a prompt, under a cloud
 {
-  // ledger: two gently curved pages
-  for (const side of [-1, 1]) {
-    for (let i = 0; i < 2600; i++) {
-      const u = rand(), v = rand();
-      const x = side * (0.05 + u * 1.55), y = 0.12 * Math.sin(u * Math.PI) + 0.02 * (1 - u);
-      P([x - 0.7, y - 0.4, -1.0 + v * 1.9], 0.45);
-    }
-    for (let r = 1; r < 9; r++) for (let i = 0; i < 120; i++) {
-      const u = 0.1 + rand() * 0.8;
-      P([side * (0.05 + u * 1.55) - 0.7, 0.12 * Math.sin(u * Math.PI) - 0.38, -1.0 + (r / 9) * 1.9 + gauss() * 0.004], 1);
-    }
-    line([side * 1.6 - 0.7, -0.4, -1.0], [side * 1.6 - 0.7, -0.4, 0.9], 300, 0.006, 1);
+  box([0, -0.45, -0.1], [3.4, 2.0, 0.12], 2400, 2200); // terminal window
+  line([-1.7, 0.3, 0.0], [1.7, 0.3, 0.0], 450, 0.006, 1);
+  for (let k = 0; k < 3; k++) circle([-1.5 + k * 0.2, 0.43, 0.01], 0.06, 110, 'z', 0.004, 1.2);
+  // prompt lines: "> ______"
+  const rows = [[0.05, 1.6], [-0.3, 2.2], [-0.65, 1.2], [-1.0, 0.0]];
+  for (const [y, len] of rows) {
+    line([-1.45, y + 0.08, 0.02], [-1.3, y, 0.02], 120, 0.006, 1.3);
+    line([-1.45, y - 0.08, 0.02], [-1.3, y, 0.02], 120, 0.006, 1.3);
+    if (len) line([-1.15, y, 0.02], [-1.15 + len, y, 0.02], Math.round(len * 260), 0.01, 0.9);
   }
-  line([-0.7, -0.38, -1.0], [-0.7, -0.38, 0.9], 400, 0.006, 1.2); // spine
-  // calculator
-  box([1.55, -0.15, 0.25], [1.0, 0.18, 1.45], 1800, 1500);
-  plane([1.2, -0.05, -0.35], [0.7, 0, 0], [0, 0, 0.3], 350, 1); // display
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) disc([1.25 + c * 0.3, -0.05, 0.15 + r * 0.22], 0.07, 70, 'y', 1.1);
-  // coin stack
-  for (let k = 0; k < 5; k++) cylinderY([0.25 + (k % 2) * 0.02, -0.4 + k * 0.09, 1.15], 0.32, 0.08, 520, 0.7);
-  render('work-5', { yaw: -0.42, pitch: 0.6, zoom: 1.05, dist: 6.2, cy: -0.1 });
+  plane([-1.15, -1.1, 0.02], [0.14, 0, 0], [0, 0.2, 0], 160, 1.3); // blinking cursor block
+  // cloud: a cluster of spheres, flattened at the bottom
+  for (const [x, y, r] of [[-0.6, 1.55, 0.42], [0.0, 1.8, 0.55], [0.6, 1.55, 0.42], [-0.25, 1.35, 0.4], [0.3, 1.35, 0.4]]) {
+    for (let i = 0; i < 700; i++) {
+      const z = rand() * 2 - 1, a = rand() * Math.PI * 2, q = Math.sqrt(1 - z * z);
+      const py = y + z * r;
+      if (py < 1.2) continue;
+      P([x + q * Math.cos(a) * r, py, 0.2 + q * Math.sin(a) * r * 0.6], 0.85);
+    }
+  }
+  // sync arrows between cloud and terminal
+  for (const [x, up] of [[-0.35, true], [0.35, false]]) {
+    line([x, 0.55, 0.3], [x, 1.1, 0.3], 220, 0.008, 1.1);
+    const tip = up ? [x, 1.1, 0.3] : [x, 0.55, 0.3], d = up ? -0.15 : 0.15;
+    line(tip, [x - 0.12, tip[1] + d, 0.3], 90, 0.008, 1.1);
+    line(tip, [x + 0.12, tip[1] + d, 0.3], 90, 0.008, 1.1);
+  }
+  render('work-5', { yaw: -0.35, pitch: 0.18, zoom: 1.0, dist: 6.2, cy: 0.3 });
 }
 console.log('wrote', outDir);

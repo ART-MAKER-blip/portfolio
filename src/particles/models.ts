@@ -303,3 +303,147 @@ export function network3d(count: number): Float32Array {
   }
   return out;
 }
+
+// ---------- Floating laptop with code (hero) ----------
+
+/**
+ * An open laptop with code on the screen, a keyboard and trackpad, a floating </> tag
+ * and { } brackets, and a faint glow underneath. Procedural points (crisp lines), tipped
+ * toward the camera so the keyboard shows. Faces +z.
+ */
+export interface LaptopModel {
+  positions: Float32Array;
+  /** Typing order of each code point (0…1, line by line); -1 for points that aren't code. */
+  reveal: Float32Array;
+  /** Keyboard key index (row × 13 + column, rows from the back) of each key point; -1 otherwise. */
+  key: Float32Array;
+}
+
+export function laptopCode(count: number): LaptopModel {
+  const pts: number[] = [];
+  const rv: number[] = [];
+  const ky: number[] = [];
+  const add = (x: number, y: number, z: number, reveal = -1, key = -1) => { pts.push(x, y, z); rv.push(reveal); ky.push(key); };
+  const J = (s = 0.008) => gauss() * s;
+
+  // screen frame: tilted back 16° from vertical, hinged at the back edge of the base
+  const W = 3.4, Hs = 2.15, tilt = 0.28, hingeY = -1.18, hingeZ = -0.95;
+  const onScreen = (u: number, v: number, lift = 0): Vec3 => [
+    u,
+    hingeY + v * Math.cos(tilt) + lift * Math.sin(tilt),
+    hingeZ - v * Math.sin(tilt) + lift * Math.cos(tilt),
+  ];
+  const baseY = -1.25, baseD = 2.3, baseZ0 = hingeZ, baseZ1 = hingeZ + baseD;
+
+  // how many points each part gets (fractions of count)
+  const parts: Array<[number, () => void]> = [
+    [0.1, () => { // base outline
+      const t = Math.random() * 2 * (W + baseD), y = baseY + (Math.random() < 0.5 ? 0 : -0.09);
+      let x: number, z: number;
+      if (t < W) { x = -W / 2 + t; z = baseZ1; }
+      else if (t < W + baseD) { x = W / 2; z = baseZ1 - (t - W); }
+      else if (t < 2 * W + baseD) { x = W / 2 - (t - W - baseD); z = baseZ0; }
+      else { x = -W / 2; z = baseZ0 + (t - 2 * W - baseD); }
+      add(x + J(), y + J(), z + J());
+    }],
+    [0.06, () => add(-W / 2 + Math.random() * W, baseY, baseZ0 + Math.random() * baseD)], // deck surface
+    [0.14, () => { // keyboard: 5 rows × 13 key outlines
+      const r = (Math.random() * 5) | 0, c = (Math.random() * 13) | 0, kw = 0.2, gap = 0.035;
+      const x0 = -1.35 + c * (kw + gap), z0 = baseZ0 + 0.25 + r * (kw + gap);
+      const e = Math.random() * 4 * kw;
+      const [x, z] = e < kw ? [x0 + e, z0] : e < 2 * kw ? [x0 + kw, z0 + e - kw] : e < 3 * kw ? [x0 + 3 * kw - e, z0 + kw] : [x0, z0 + 4 * kw - e];
+      add(x + J(0.004), baseY + 0.01, z + J(0.004), -1, r * 13 + c);
+    }],
+    [0.04, () => { // trackpad
+      const w = 1.1, d = 0.55, x0 = -w / 2, z0 = baseZ1 - 0.68, e = Math.random() * 2 * (w + d);
+      const [x, z] = e < w ? [x0 + e, z0] : e < w + d ? [x0 + w, z0 + e - w] : e < 2 * w + d ? [x0 + 2 * w + d - e, z0 + d] : [x0, z0 + 2 * (w + d) - e];
+      add(x + J(0.005), baseY + 0.01, z + J(0.005));
+    }],
+    [0.12, () => { // screen bezel + inner display edge
+      const inner = Math.random() < 0.5, m = inner ? 0.12 : 0, w = W - 2 * m, h = Hs - 2 * m;
+      const e = Math.random() * 2 * (w + h);
+      const [u, v] = e < w ? [-w / 2 + e, m] : e < w + h ? [w / 2, m + e - w] : e < 2 * w + h ? [w / 2 - (e - w - h), m + h] : [-w / 2, m + h - (e - 2 * w - h)];
+      const p = onScreen(u, v);
+      add(p[0] + J(), p[1] + J(), p[2] + J());
+    }],
+    [0.05, () => { const p = onScreen((Math.random() - 0.5) * (W - 0.24), 0.12 + Math.random() * (Hs - 0.24)); add(p[0], p[1], p[2]); }], // display
+    [0.3, () => { // code: indented token lines
+      const row = (Math.random() * CODE.length) | 0, [indent, ...tokens] = CODE[row];
+      let u0 = -1.35 + indent * 0.22;
+      const total = tokens.reduce((a, b) => a + b, 0) + (tokens.length - 1) * 0.08;
+      let pick = Math.random() * total;
+      const start = u0;
+      for (const len of tokens) {
+        if (pick <= len) {
+          const u = u0 + pick, p = onScreen(u, Hs - 0.32 - row * 0.135, 0.01);
+          // typed left to right, line by line
+          const reveal = (row + (u - start) / (total + 1e-6)) / CODE.length;
+          add(p[0] + J(0.004), p[1] + J(0.004), p[2], reveal);
+          return;
+        }
+        pick -= len + 0.08; u0 += len + 0.08;
+      }
+    }],
+    [0.025, () => { // line numbers
+      const row = (Math.random() * CODE.length) | 0, p = onScreen(-1.52 + Math.random() * 0.06, Hs - 0.32 - row * 0.135, 0.01);
+      add(p[0] + J(0.003), p[1] + J(0.003), p[2]);
+    }],
+    [0.09, () => { // floating </> above the screen
+      const s = 0.55, cx = 0, cy = 1.62, cz = 0.2;
+      const stroke = (Math.random() * 5) | 0, t = Math.random();
+      const seg: Array<[number, number, number, number]> = [
+        [-0.9, 0, -0.55, 0.38], [-0.9, 0, -0.55, -0.38], [-0.18, -0.45, 0.18, 0.45], [0.9, 0, 0.55, 0.38], [0.9, 0, 0.55, -0.38],
+      ];
+      const [x0, y0, x1, y1] = seg[stroke];
+      add(cx + (x0 + (x1 - x0) * t) * s + J(0.01), cy + (y0 + (y1 - y0) * t) * s + J(0.01), cz + J(0.03));
+    }],
+    [0.04, () => { // { } braces floating beside the screen
+      const side = Math.random() < 0.5 ? -1 : 1; // -1 = '{' on the left, 1 = '}' on the right
+      const t = Math.random() * (BRACE.length - 1), i = Math.floor(t), f = t - i;
+      const [x0, y0] = BRACE[i], [x1, y1] = BRACE[i + 1];
+      const x = (x0 + (x1 - x0) * f) * -side, y = y0 + (y1 - y0) * f;
+      add(side * 2.15 + x * 0.42 + J(0.008), 0.35 + y * 0.42 + J(0.008), 0.3 + J(0.02));
+    }],
+    [0.023, () => { const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()); add(Math.cos(a) * r * 2.0, -1.75 + J(0.04), 0.2 + Math.sin(a) * r * 1.0); }], // glow below
+  ];
+
+  const total = parts.reduce((a, [f]) => a + f, 0);
+  for (const [f, fn] of parts) {
+    const n = Math.round((count * f) / total);
+    for (let i = 0; i < n; i++) fn();
+  }
+  while (pts.length < count * 3) parts[6][1]();
+
+  // tip the whole laptop toward the camera so the keyboard shows
+  const out = new Float32Array(count * 3);
+  const c = Math.cos(0.32), s = Math.sin(0.32);
+  for (let i = 0; i < count; i++) {
+    const x = pts[i * 3], y = pts[i * 3 + 1], z = pts[i * 3 + 2];
+    out[i * 3] = x;
+    out[i * 3 + 1] = y * c - z * s + 0.15;
+    out[i * 3 + 2] = y * s + z * c;
+  }
+  return { positions: out, reveal: Float32Array.from(rv.slice(0, count)), key: Float32Array.from(ky.slice(0, count)) };
+}
+
+/** A '{' outline as a polyline (x right, y up); '}' is the mirror image. */
+const BRACE: Array<[number, number]> = [
+  [0.28, 1], [0.08, 0.92], [0.04, 0.6], [0.04, 0.2], [-0.2, 0], [0.04, -0.2], [0.04, -0.6], [0.08, -0.92], [0.28, -1],
+];
+
+/** Code shown on the laptop screen: [indent, token lengths…] per line. */
+const CODE: number[][] = [
+  [0, 0.45, 0.6, 0.25],
+  [1, 0.35, 0.9],
+  [1, 0.5, 0.3, 0.55],
+  [2, 0.7, 0.4],
+  [2, 0.3, 0.85, 0.2],
+  [1, 0.25],
+  [0, 0.3],
+  [0, 0.6, 0.45],
+  [1, 0.4, 0.7, 0.3],
+  [1, 0.55],
+  [2, 0.35, 0.5, 0.6],
+  [1, 0.2],
+  [0, 0.3],
+];

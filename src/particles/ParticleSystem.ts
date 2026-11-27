@@ -36,6 +36,9 @@ export class ParticleSystem {
   /** 0..N-1 — drive this from the scroll timeline. */
   readonly state = { progress: 0, intro: 0, parallaxWeight: 1 };
 
+  /** Interactive hero laptop: how much code is typed (0…~1.2) and each key's press amount. */
+  readonly laptop = { typed: 1.2, keys: new Array<number>(65).fill(0) };
+
   private geometry = new THREE.BufferGeometry();
   private shapes: ShapeDef[] = [];
   private attrs: THREE.BufferAttribute[] = [];
@@ -61,6 +64,9 @@ export class ParticleSystem {
     this.geometry.setAttribute('position', cloud); // drives draw count
     this.geometry.setAttribute('aNoise', cloud);
     this.geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+    const none = new Float32Array(n).fill(-1);
+    this.geometry.setAttribute('aReveal', new THREE.BufferAttribute(none, 1));
+    this.geometry.setAttribute('aKey', new THREE.BufferAttribute(none.slice(), 1));
 
     this.uniforms = {
       uTime: { value: 0 },
@@ -90,6 +96,9 @@ export class ParticleSystem {
       uTiltFrom: { value: 1 },
       uTiltTo: { value: 1 },
       uTilt: { value: new THREE.Vector2() },
+      uHero: { value: 0 },
+      uTyped: { value: 1.2 },
+      uKeys: { value: this.laptop.keys },
       uColor: { value: new THREE.Color(config.color) },
     };
 
@@ -117,6 +126,12 @@ export class ParticleSystem {
     this.attrs = shapes.map((s) => new THREE.BufferAttribute(s.positions, 3));
     this.boundIndex = -1;
     this.bind(0);
+  }
+
+  /** Per-point data for the hero laptop (which points are code, which are keys). */
+  setLaptopData(reveal: Float32Array, key: Float32Array) {
+    this.geometry.setAttribute('aReveal', new THREE.BufferAttribute(reveal, 1));
+    this.geometry.setAttribute('aKey', new THREE.BufferAttribute(key, 1));
   }
 
   /** Replace one shape's positions in place (e.g. the contact frame on resize). */
@@ -229,8 +244,11 @@ export class ParticleSystem {
       u.uOffsetTo.value.fromArray(to.offset ?? [0, 0, 0]);
       u.uTiltFrom.value = from.tilt ?? 1;
       u.uTiltTo.value = to.tilt ?? 1;
+      // the laptop is shape 0: fully interactive while it's shown, fading out as it morphs away
+      u.uHero.value = idx === 0 ? 1 - u.uLocal.value : 0;
     }
     u.uIntro.value = this.state.intro;
+    u.uTyped.value = this.laptop.typed;
 
     // Smoothed mouse (repulsion) and hero parallax.
     const m = u.uMouse.value;

@@ -9,7 +9,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { config, reducedMotion, isMobile } from './particles/config';
 import { ParticleSystem, type ShapeDef } from './particles/ParticleSystem';
 import { loadImage, sampleImage, sphere, ribbons, wisp, frame, zoomMap } from './particles/shapes';
-import { sampleSdf, capModel, network3d, mannequinBust } from './particles/models';
+import { sampleSdf, capModel, network3d, laptopCode } from './particles/models';
 import { buildTimeline } from './scroll/timeline';
 import { setupSmoothScroll } from './scroll/smooth';
 import { hideHeroForIntro, revealHero, splitHeroName } from './sections/hero';
@@ -17,6 +17,7 @@ import { setupGlobe } from './sections/globe';
 import { buildWorks, setupWavyFrames } from './sections/works';
 import { setupContact } from './sections/contact';
 import { setupLocationLabels } from './sections/location';
+import { setupLaptop } from './sections/laptop';
 
 gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true });
@@ -56,13 +57,10 @@ async function init() {
   await nextFrame();
 
   const n = config.count;
-  // Hero: an abstract 3D display mannequin (featureless egg head, neck, shoulders, chest).
-  // A share of the points goes on the front of the chest so the muscles and collarbones read.
-  const bustOpts = { scale: 1.15, offset: [0, 0.7, 0] as [number, number, number] };
-  const nChest = Math.floor(n * 0.18), nBody = n - nChest;
-  const face = new Float32Array(n * 3);
-  face.set(sampleSdf(mannequinBust, nBody, { min: [-1.7, -3.7, -0.8], max: [1.7, 1.15, 0.9], ...bustOpts }));
-  face.set(sampleSdf(mannequinBust, nChest, { min: [-1.2, -2.75, 0.05], max: [1.2, -1.3, 0.9], ...bustOpts }), nBody * 3);
+  // Hero: a floating laptop with code on the screen (interactive: see sections/laptop.ts)
+  const laptopModel = laptopCode(n);
+  const face = laptopModel.positions;
+  system.setLaptopData(laptopModel.reveal, laptopModel.key);
   step();
   await nextFrame();
 
@@ -99,6 +97,7 @@ async function init() {
   buildWorks();
   const globe = setupGlobe(system, SPHERE_RADIUS, config.globeSpin);
   const contact = setupContact(system, 'frame');
+  setupLaptop(system, reducedMotion);
   // "Philippines" to the right of the map (below it on phones); the city label beside the pin head
   const locationLabels = setupLocationLabels(
     system,

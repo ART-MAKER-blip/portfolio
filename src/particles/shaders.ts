@@ -88,11 +88,16 @@ uniform vec3  uOffsetTo;
 uniform float uTiltFrom;     // per-shape weight of the hover turn (0 = fixed to the page)
 uniform float uTiltTo;
 uniform vec2  uTilt;         // hover turn: x = yaw, y = pitch (radians)
+uniform float uHero;         // 0..1 how much of the hero laptop is currently shown
+uniform float uTyped;        // 0..~1.2 how much of the on-screen code has been typed
+uniform float uKeys[65];     // press amount of each laptop key (0..1)
 
 attribute vec3 aFrom;
 attribute vec3 aTo;
 attribute vec3 aNoise;
 attribute float aSeed;
+attribute float aReveal;     // laptop code: typing order (0..1), -1 if not code
+attribute float aKey;        // laptop key index, -1 if not a key
 
 varying float vAlpha;
 
@@ -158,6 +163,21 @@ void main() {
   float amp = uNoiseRest + uNoiseMorph * max(morph, 1.0 - intro);
   p += snoiseVec3(p * uNoiseScale + vec3(0.0, 0.0, uTime * 0.12) + aSeed * 0.15) * amp;
 
+  // Interactive laptop: code types itself out, the newest characters glow, keys press down
+  float interact = 1.0;
+  if (uHero > 0.0) {
+    if (aReveal >= 0.0) {
+      float shown = step(aReveal, uTyped);
+      float head = 1.0 - smoothstep(0.0, 0.02, uTyped - aReveal);
+      interact *= mix(1.0, shown * (1.0 + 2.0 * head), uHero);
+    }
+    if (aKey >= 0.0) {
+      float press = uKeys[int(aKey + 0.5)];
+      p.y -= 0.05 * press * uHero;
+      interact *= 1.0 + 2.4 * press * uHero;
+    }
+  }
+
   vec4 world = modelMatrix * vec4(p, 1.0);
 
   // Mouse repulsion in world space (z = 0 plane).
@@ -172,7 +192,7 @@ void main() {
   float sizeJitter = 0.55 + fract(aSeed * 91.7) * 0.9;
   gl_PointSize = uSize * sizeJitter * uPixelRatio * (uSizeScale / -mv.z);
 
-  vAlpha = mix(uAlphaFrom, uAlphaTo, local) * fade * uOpacity * (0.45 + 0.55 * fract(aSeed * 13.37));
+  vAlpha = mix(uAlphaFrom, uAlphaTo, local) * fade * uOpacity * (0.45 + 0.55 * fract(aSeed * 13.37)) * interact;
 }
 `;
 

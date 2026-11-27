@@ -36,6 +36,12 @@ export class ParticleSystem {
   /** 0..N-1 — drive this from the scroll timeline. */
   readonly state = { progress: 0, intro: 0, parallaxWeight: 1 };
 
+  /**
+   * The morph shown on screen. It glides toward `state.progress` at its own calm pace,
+   * so fast scrolling moves the page quickly while the particles still morph slowly.
+   */
+  private shownProgress = 0;
+
   /** Interactive hero laptop: how much code is typed (0…~1.2) and each key's press amount. */
   readonly laptop = { typed: 1.2, keys: new Array<number>(65).fill(0) };
 
@@ -228,7 +234,14 @@ export class ParticleSystem {
     const n = this.shapes.length;
 
     if (n) {
-      const p = THREE.MathUtils.clamp(this.state.progress, 0, n - 1);
+      // ease toward the scroll position, but never faster than ~1 shape per 1.1 s
+      const target = this.state.progress;
+      const diff = target - this.shownProgress;
+      const step = diff * (1 - Math.exp(-dt * (reducedMotion ? 20 : 2.4)));
+      const maxStep = dt * (reducedMotion ? 20 : 0.9);
+      this.shownProgress += THREE.MathUtils.clamp(step, -maxStep, maxStep);
+      if (Math.abs(target - this.shownProgress) < 1e-4) this.shownProgress = target;
+      const p = THREE.MathUtils.clamp(this.shownProgress, 0, n - 1);
       const idx = Math.min(Math.floor(p), Math.max(n - 2, 0));
       this.bind(idx);
       const from = this.shapes[idx];

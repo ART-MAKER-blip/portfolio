@@ -8,7 +8,7 @@ gsap.registerPlugin(ScrollTrigger);
 export const SHAPE = { portrait: 0, globe: 1, map: 2, cdo: 3, ribbons: 4, cap: 5, network: 6, project: 7, wisp: 8, frame: 9 } as const;
 
 /** How many viewport heights of scrolling one timeline unit takes. */
-const SCREENS_PER_UNIT = 1.4; // was 0.85: more scrolling per stage, so each one lingers
+const SCREENS_PER_UNIT = 0.7; // half the scrolling per stage (the particles keep their own slow pace)
 
 /**
  * One pinned master ScrollTrigger. The stage (100vh) is pinned while a
@@ -123,7 +123,7 @@ export function buildTimeline(system: ParticleSystem, reduced: boolean) {
     start: 'top top',
     end: () => `+=${window.innerHeight * tl.duration() * SCREENS_PER_UNIT}`,
     pin: true,
-    scrub: reduced ? true : 1.1, // was 0.6: animations ease in more gently behind the scroll
+    scrub: reduced ? true : 0.6, // text and panels follow the scroll closely
     animation: tl,
     invalidateOnRefresh: true,
     onUpdate: (self) => {

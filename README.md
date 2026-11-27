@@ -21,7 +21,7 @@ Deploys to Vercel with `npx vercel deploy --prod` (settings in `vercel.json`).
 
 | Stage | Particle shape | Content |
 |---|---|---|
-| 1. Hero | 3D particle portrait (from a photo) | "Hi, I'm Art Nathaniel Malong"; letters assemble and disintegrate with the scroll |
+| 1. Hero | Neutral 3D mannequin bust | "Hi, I'm Art Nathaniel Malong"; letters assemble and disintegrate with the scroll |
 | 2. Globe | Spinning sphere | "Front-end developer" · "2D & 3D data annotation" |
 | 3. Location | Outline of the Philippines, extruded | Based in the Philippines |
 | 3b. Zoom | Map zooms into Mindanao, pin on Cagayan de Oro | Cagayan de Oro, Mindanao |
@@ -32,7 +32,7 @@ Deploys to Vercel with `npx vercel deploy --prod` (settings in `vercel.json`).
 | 8. Contact | Frame around the email | artmalong123@gmail.com |
 
 - The scroll choreography is in `src/scroll/timeline.ts`. Shape order there (`SHAPE`) must match the `shapes` array in `src/main.ts`.
-- **3D models** are in `src/particles/models.ts`: the robot and cap are signed distance functions, and `sampleSdf` scatters particles over their surfaces. The network is a procedural 3D point set. The CDO zoom (`zoomMap` in `shapes.ts`) scales the map's own particles outward from Cagayan de Oro and turns some of them into a pin.
+- **3D models** are in `src/particles/models.ts`: the mannequin bust (`mannequinBust`), cap and the earlier robot are signed distance functions, and `sampleSdf` scatters particles over their surfaces. The network is a procedural 3D point set. The CDO zoom (`zoomMap` in `shapes.ts`) scales the map's own particles outward from Cagayan de Oro and turns some of them into a pin.
 - **Hover:** every model turns toward the cursor (`hoverYaw` / `hoverPitch` in `config.ts`). Set a shape's `tilt: 0` in `src/main.ts` to keep it fixed, as the card wisp and contact frame are. Each shape's `offset` places it beside its text and is applied after the turn, so it turns in place.
 - Other shapes (sphere, ribbons, wisp, frame, image sampler for the map) are in `src/particles/shapes.ts`.
 - Visual tuning (point count, size, noise, mouse repulsion) is in `src/particles/config.ts`.
@@ -56,13 +56,3 @@ for i in 1 2 3 4 5; do
   magick /tmp/work-art/work-$i.png -quality 82 public/works/work-$i.webp
 done
 ```
-
-## Hero portrait
-
-The hero is a 3D particle portrait stored as a point cloud in `public/face.bin` (int16 xyz × 8000, pre-shuffled). It is generated from a photo, which is not part of the repo:
-
-```bash
-python3 scripts/face-points.py /path/to/photo.png public/face.bin
-```
-
-The script cuts the subject out of a plain, low-saturation background, sculpts depth (head, nose, brow, cheeks, lips, chin, eye sockets, neck, shoulders, plus fine relief from shading) and scatters points by brightness. The facial feature positions in the script are in the source photo's pixels, so update them for a different photo. The earlier robot bust is still available as `robotBust` in `src/particles/models.ts`.

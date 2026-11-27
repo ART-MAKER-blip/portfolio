@@ -9,7 +9,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { config, reducedMotion, isMobile } from './particles/config';
 import { ParticleSystem, type ShapeDef } from './particles/ParticleSystem';
 import { loadImage, sampleImage, sphere, ribbons, wisp, frame, zoomMap } from './particles/shapes';
-import { sampleSdf, capModel, network3d } from './particles/models';
+import { sampleSdf, capModel, network3d, mannequinBust } from './particles/models';
 import { buildTimeline } from './scroll/timeline';
 import { setupSmoothScroll } from './scroll/smooth';
 import { hideHeroForIntro, revealHero, splitHeroName } from './sections/hero';
@@ -37,24 +37,6 @@ const LIFT = isMobile ? 1 : 0;
 const counter = document.querySelector<HTMLElement>('.preloader-count')!;
 const setLoad = (p: number) => (counter.textContent = `${Math.round(p * 100)}%`);
 
-/**
- * Load the portrait point cloud (int16 xyz × 8000) and fit it to `count` points:
- * the file is pre-shuffled, so a prefix is an even sample; extra points are jittered copies.
- */
-async function loadFace(url: string, count: number, scale: number): Promise<Float32Array> {
-  const src = new Int16Array(await (await fetch(url)).arrayBuffer());
-  const m = src.length / 3;
-  const out = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    const j = (i % m) * 3;
-    const jit = i < m ? 0 : 0.008;
-    out[i * 3] = (src[j] / 8000) * scale + (Math.random() - 0.5) * jit;
-    out[i * 3 + 1] = (src[j + 1] / 8000) * scale + (Math.random() - 0.5) * jit;
-    out[i * 3 + 2] = (src[j + 2] / 8000) * scale + (Math.random() - 0.5) * jit;
-  }
-  return out;
-}
-
 /** Let the browser paint (so the loading % updates) between heavy shape builds. */
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
@@ -74,8 +56,15 @@ async function init() {
   await nextFrame();
 
   const n = config.count;
-  // Hero: 3D particle portrait (point cloud built from a photo by scripts/face-points.py)
-  const face = await loadFace(`${base}face.bin`, n, 1.05);
+  // Hero: a neutral 3D mannequin bust (generic human head and shoulders)
+  // ~30% of the points go on the front of the face (two nested areas, so the extra density
+  // fades out softly) so the brow, eye hollows, nose and lips read
+  const bustOpts = { scale: 1.25, offset: [0, 0.45, 0] as [number, number, number] };
+  const nInner = Math.floor(n * 0.15), nOuter = Math.floor(n * 0.15), nBody = n - nInner - nOuter;
+  const face = new Float32Array(n * 3);
+  face.set(sampleSdf(mannequinBust, nBody, { min: [-1.65, -2.95, -0.75], max: [1.65, 1.35, 1.15], ...bustOpts }));
+  face.set(sampleSdf(mannequinBust, nOuter, { min: [-0.78, -1.0, 0.25], max: [0.78, 0.85, 1.15], ...bustOpts }), nBody * 3);
+  face.set(sampleSdf(mannequinBust, nInner, { min: [-0.55, -0.75, 0.5], max: [0.55, 0.42, 1.15], ...bustOpts }), (nBody + nOuter) * 3);
   step();
   await nextFrame();
 

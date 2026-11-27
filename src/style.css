@@ -280,6 +280,87 @@ main {
   line-height: 1.7;
 }
 
+/* Featured project: preview image + copy, a particle frame hugs the image */
+.project {
+  display: flex;
+  align-items: center;
+}
+
+.project-inner {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 88px);
+  padding: 0 clamp(0px, 3vw, 56px);
+}
+
+.project-media {
+  display: block;
+  aspect-ratio: 1200 / 630;
+  overflow: hidden;
+}
+
+.project-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.8s;
+  filter: saturate(0.85);
+}
+
+.project-media:hover img,
+.project-media:focus-visible img {
+  transform: scale(1.04);
+  filter: saturate(1);
+}
+
+.project-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 440px;
+}
+
+.project-title {
+  font-size: clamp(28px, 3.2vw, 52px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.project-sub {
+  font-size: 13px;
+}
+
+.project-lead {
+  font-size: clamp(17px, 1.45vw, 21px);
+  line-height: 1.45;
+  margin-top: 6px;
+}
+
+.project-text {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.project-link {
+  margin-top: 8px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  align-self: flex-start;
+  padding-bottom: 3px;
+  transition: border-color 0.3s;
+}
+
+.project-link:hover,
+.project-link:focus-visible {
+  border-color: #fff;
+}
+
 /* 5. Works */
 .works {
   display: flex;
@@ -402,6 +483,21 @@ main {
 }
 
 @media (max-width: 640px) {
+  .project-inner {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 0;
+  }
+
+  .project-copy {
+    gap: 10px;
+  }
+
+  .project-text {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
   .pin-label {
     transform: translateX(-50%);
     padding-left: 0;

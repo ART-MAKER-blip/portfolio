@@ -5,7 +5,7 @@ import type { ParticleSystem } from '../particles/ParticleSystem';
 gsap.registerPlugin(ScrollTrigger);
 
 /** Shape order — must match the array passed to ParticleSystem.setShapes(). */
-export const SHAPE = { portrait: 0, globe: 1, map: 2, cdo: 3, ribbons: 4, cap: 5, network: 6, wisp: 7, frame: 8 } as const;
+export const SHAPE = { portrait: 0, globe: 1, map: 2, cdo: 3, ribbons: 4, cap: 5, network: 6, project: 7, wisp: 8, frame: 9 } as const;
 
 /** How many viewport heights of scrolling one timeline unit takes. */
 const SCREENS_PER_UNIT = 1.4; // was 0.85: more scrolling per stage, so each one lingers
@@ -89,26 +89,32 @@ export function buildTimeline(system: ParticleSystem, reduced: boolean) {
   tl.addLabel('skills', 10.6);
   hide($('.skills'), 11.3);
 
-  // 7. Areas of work: horizontal strip moves with scroll
-  morph(SHAPE.wisp, 11.35, 0.8);
-  tl.fromTo($('.works'), { autoAlpha: 0, y: reduced ? 0 : 80 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out' }, 11.6);
+  // 7. Featured project: preview image with a particle frame around it
+  morph(SHAPE.project, 11.45);
+  show($('.project'), 12.05);
+  tl.addLabel('project', 12.7);
+  hide($('.project'), 13.45);
+
+  // 8. Areas of work: horizontal strip moves with scroll
+  morph(SHAPE.wisp, 13.55, 0.8);
+  tl.fromTo($('.works'), { autoAlpha: 0, y: reduced ? 0 : 80 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out' }, 13.8);
   tl.fromTo(
     strip,
     { x: () => (reduced ? 0 : window.innerWidth * 0.25) },
     { x: () => -(strip.scrollWidth - window.innerWidth), duration: 3.0, ease: 'none' },
-    11.6,
+    13.8,
   );
-  tl.addLabel('works', 13.1);
-  hide($('.works'), 14.6, 0.35);
+  tl.addLabel('works', 15.3);
+  hide($('.works'), 16.8, 0.35);
 
-  // 8. Outro
-  show($('.more'), 14.9, 0.3);
-  tl.addLabel('more', 15.25);
-  hide($('.more'), 15.5, 0.3);
-  morph(SHAPE.frame, 15.6, 1.1);
-  show($('.contact'), 16.3, 0.4);
-  tl.addLabel('contact', 16.95);
-  tl.to({}, { duration: 0.3 }, 16.95); // hold at the end
+  // 9. Outro
+  show($('.more'), 17.1, 0.3);
+  tl.addLabel('more', 17.45);
+  hide($('.more'), 17.7, 0.3);
+  morph(SHAPE.frame, 17.8, 1.1);
+  show($('.contact'), 18.5, 0.4);
+  tl.addLabel('contact', 19.15);
+  tl.to({}, { duration: 0.3 }, 19.15); // hold at the end
 
   tl.addLabel('hero', 0);
 

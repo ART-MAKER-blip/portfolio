@@ -1,7 +1,7 @@
 import type { ParticleSystem } from '../particles/ParticleSystem';
 
 /** Offset of `el` relative to `ancestor`, ignoring CSS transforms. */
-function layoutRect(el: HTMLElement, ancestor: HTMLElement) {
+export function layoutRect(el: HTMLElement, ancestor: HTMLElement) {
   let x = 0;
   let y = 0;
   let node: HTMLElement | null = el;

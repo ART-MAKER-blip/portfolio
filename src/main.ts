@@ -18,6 +18,7 @@ import { buildWorks, setupWavyFrames } from './sections/works';
 import { setupContact } from './sections/contact';
 import { setupLocationLabels } from './sections/location';
 import { setupLaptop } from './sections/laptop';
+import { setupProject } from './sections/project';
 
 gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true });
@@ -88,6 +89,7 @@ async function init() {
     { name: 'ribbons', positions: ribbons(n), drift: 1, tilt: 0.4 },
     { name: 'cap', positions: cap, rotation: (t) => t * 0.14, offset: [-2.5 * SIDE, 0.1, 0] },
     { name: 'network', positions: network, rotation: (t) => t * 0.07, offset: [2.0 * SIDE, 2.4 * LIFT, 0] },
+    { name: 'project', positions: frame(n, 4, 2.2), tilt: 0 }, // refitted around the preview image on resize
     { name: 'wisp', positions: wisp(n), drift: 0.8, alpha: 0.3, tilt: 0 },
     { name: 'frame', positions: frame(n, 5, 1.6), tilt: 0 },
   ];
@@ -98,6 +100,7 @@ async function init() {
   const globe = setupGlobe(system, SPHERE_RADIUS, config.globeSpin);
   const contact = setupContact(system, 'frame');
   setupLaptop(system, reducedMotion);
+  const project = setupProject(system, 'project');
   // "Philippines" to the right of the map (below it on phones); the city label beside the pin head
   const locationLabels = setupLocationLabels(
     system,
@@ -113,6 +116,7 @@ async function init() {
     system.resize();
     globe.resize();
     contact.resize();
+    project.resize();
     locationLabels.resize();
   };
   layout();

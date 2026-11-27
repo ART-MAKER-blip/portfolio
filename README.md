@@ -28,8 +28,9 @@ Deploys to Vercel with `npx vercel deploy --prod` (settings in `vercel.json`).
 | 4. About me | Drifting ribbons | Front-end, Python/Java/Go, 2D & 3D data annotation, Bash, cloud |
 | 5. Education | 3D graduation cap | BSIT (Digital Arts); NC III in Digital Arts (TESDA) |
 | 6. Skills | 3D network | Front-end, programming, Bash & cloud, data annotation, digital arts |
-| 7. Areas of work | Faint wisp + card strip | Five particle-art cards |
-| 8. Contact | Frame around the email | artmalong123@gmail.com |
+| 7. Featured project | Particle frame around the preview | The Course of Empire (links to the live site) |
+| 8. Areas of work | Faint wisp + card strip | Five particle-art cards |
+| 9. Contact | Frame around the email | artmalong123@gmail.com |
 
 - The scroll choreography is in `src/scroll/timeline.ts`. Shape order there (`SHAPE`) must match the `shapes` array in `src/main.ts`.
 - **3D models** are in `src/particles/models.ts`: the cap, the earlier mannequin and robot busts are signed distance functions; the hero laptop (`laptopCode`) is a procedural point set; and `sampleSdf` scatters particles over their surfaces. The network is a procedural 3D point set. The CDO zoom (`zoomMap` in `shapes.ts`) scales the map's own particles outward from Cagayan de Oro and turns some of them into a pin.

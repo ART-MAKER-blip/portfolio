@@ -209,16 +209,50 @@ main {
   text-transform: uppercase;
 }
 
-/* 3. Location */
-.caption {
+/* 3. Location: labels sit on the particle map (positioned from JS) */
+.map-label,
+.pin-label {
   position: absolute;
-  right: var(--pad);
-  bottom: var(--pad);
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin: 0;
   font-size: 13px;
-  text-align: right;
+  white-space: nowrap;
+}
+
+.map-label {
+  transform: translateY(-50%);
+}
+
+.map-label-big {
+  font-size: clamp(34px, 4.4vw, 72px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* city label: a thin leader line from the pin head to the text */
+.pin-label {
+  transform: translateY(-50%);
+  padding-left: 64px;
+}
+
+.pin-label::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0.95em;
+  width: 48px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.pin-label-big {
+  font-size: clamp(22px, 2.4vw, 38px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 /* 4. Approach */
@@ -368,6 +402,17 @@ main {
 }
 
 @media (max-width: 640px) {
+  .pin-label {
+    transform: translateX(-50%);
+    padding-left: 0;
+    align-items: center;
+    text-align: center;
+  }
+
+  .pin-label::before {
+    display: none;
+  }
+
   .hero-intro {
     top: auto;
     bottom: calc(var(--pad) * 3);

@@ -263,7 +263,8 @@ export function zoomMap(
   focus: [number, number],
   zoom: number,
   target: [number, number],
-  pinShare = 0.12,
+  pinShare = 0.07,
+  pin = 0.55, // pin size (1 = original)
 ): Float32Array {
   const n = map.length / 3;
   const out = new Float32Array(map.length);
@@ -279,16 +280,16 @@ export function zoomMap(
     let x: number, y: number, z: number;
     if (k < 0.45) {
       // pin head: sphere
-      const u = Math.random() * 2 - 1, a = Math.random() * TAU, r = Math.sqrt(1 - u * u) * 0.3;
-      x = tx + Math.cos(a) * r; y = ty + 1.0 + u * 0.3; z = 0.3 + Math.sin(a) * r;
+      const u = Math.random() * 2 - 1, a = Math.random() * TAU, r = Math.sqrt(1 - u * u) * 0.3 * pin;
+      x = tx + Math.cos(a) * r; y = ty + (1.0 + u * 0.3) * pin; z = 0.3 + Math.sin(a) * r;
     } else if (k < 0.75) {
       // pin body: cone down to the point
-      const s = Math.random(), a = Math.random() * TAU, r = 0.24 * (1 - s);
-      x = tx + Math.cos(a) * r; y = ty + 0.85 - s * 0.85; z = 0.3 + Math.sin(a) * r;
+      const s = Math.random(), a = Math.random() * TAU, r = 0.24 * (1 - s) * pin;
+      x = tx + Math.cos(a) * r; y = ty + (0.85 - s * 0.85) * pin; z = 0.3 + Math.sin(a) * r;
     } else {
       // ripple rings on the ground around the point
-      const ring = Math.random() < 0.6 ? 0.35 : 0.65, a = Math.random() * TAU;
-      x = tx + Math.cos(a) * ring + gauss() * 0.01; y = ty + Math.sin(a) * ring * 0.35 + gauss() * 0.01; z = 0.3;
+      const ring = (Math.random() < 0.6 ? 0.35 : 0.65) * pin, a = Math.random() * TAU;
+      x = tx + Math.cos(a) * ring + gauss() * 0.008; y = ty + Math.sin(a) * ring * 0.35 + gauss() * 0.008; z = 0.3;
     }
     out[i * 3] = x;
     out[i * 3 + 1] = y;

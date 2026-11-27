@@ -16,6 +16,7 @@ import { hideHeroForIntro, revealHero, splitHeroName } from './sections/hero';
 import { setupGlobe } from './sections/globe';
 import { buildWorks, setupWavyFrames } from './sections/works';
 import { setupContact } from './sections/contact';
+import { setupLocationLabels } from './sections/location';
 
 gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true });
@@ -73,7 +74,8 @@ async function init() {
   // box (x 24…588, y 156…924) and scales its height to 5 units.
   const mapUnit = 5.0 / (924 - 156);
   const CDO: [number, number] = [((124.65 - 116.8) * 60 - 306) * mapUnit, -((21.2 - 8.48) * 60 - 540) * mapUnit];
-  const cdo = zoomMap(map, CDO, 3.4, [-0.6 * SIDE, -0.35]);
+  const PIN: [number, number] = [-0.6 * SIDE, -0.35];
+  const cdo = zoomMap(map, CDO, 3.4, PIN);
   const network = network3d(n);
   step();
 
@@ -94,6 +96,12 @@ async function init() {
   buildWorks();
   const globe = setupGlobe(system, SPHERE_RADIUS, config.globeSpin);
   const contact = setupContact(system, 'frame');
+  // "Philippines" to the right of the map (below it on phones); the city label beside the pin head
+  const locationLabels = setupLocationLabels(
+    system,
+    isMobile ? [-1.5, -2.7] : [2.15, 0.55],
+    isMobile ? [PIN[0], PIN[1] - 0.25] : [PIN[0] + 0.3, PIN[1] + 0.6],
+  );
   const lenis = setupSmoothScroll(reducedMotion);
   lenis?.stop();
   const { tl, st, scrollFor } = buildTimeline(system, reducedMotion);
@@ -103,6 +111,7 @@ async function init() {
     system.resize();
     globe.resize();
     contact.resize();
+    locationLabels.resize();
   };
   layout();
   let resizeTimer = 0;
